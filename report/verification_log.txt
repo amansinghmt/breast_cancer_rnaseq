@@ -1,0 +1,31 @@
+Dataset: breast_cancer_rnaseq (GSE306117)
+Date: Sat Jan 24 17:41:31 IST 2026
+System: Darwin Amans-MacBook-Air-2.local 25.1.0 Darwin Kernel Version 25.1.0: Mon Oct 20 19:32:56 PDT 2025; root:xnu-12377.41.6~2/RELEASE_ARM64_T8132 arm64
+
+Sample verification (metadata)
+use_main_tumor_vs_normal (column 10) counts:
+  no	5
+  yes	69
+rows with use_main_tumor_vs_normal == yes: 69
+condition counts among use_main_tumor_vs_normal == yes:
+  Normal	23
+  Tumor	46
+
+DESeq2 verification
+genes tested: 60617
+significant genes (padj < 0.05): 6613
+upregulated in Tumor: 3829
+downregulated in Tumor: 2784
+
+Enrichment verification
+Hallmark significant pathways (padj < 0.05): 32
+GO BP significant terms (p.adjust < 0.05): 624
+
+Figure existence check
+OK\tfigures/qc/library_size.png\t94914 bytes
+OK\tfigures/qc/pca.png\t161872 bytes
+OK\tfigures/de/ma_plot.png\t538747 bytes
+OK\tfigures/de/volcano.png\t879521 bytes
+OK\tfigures/de/heatmap_top50.png\t570163 bytes
+OK\tfigures/enrichment/hallmark_gsea_top10.png\t178755 bytes
+OK\tfigures/enrichment/go_barplot_top15.png\t208791 bytes
