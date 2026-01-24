@@ -1,0 +1,9 @@
+# Big / generated data
+data/raw/
+data/processed/
+
+# OS / editor junk
+.DS_Store
+.vscode/
+__pycache__/
+*.pyc
