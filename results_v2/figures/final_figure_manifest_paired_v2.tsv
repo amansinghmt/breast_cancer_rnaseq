@@ -1,0 +1,8 @@
+figure_id	section	file_path	description
+Fig1A	QC	figures_v2/final/Fig1A_qc_library_size_pairs.png	Paired library-size dumbbell plot per patient.
+Fig1B	QC	figures_v2/final/Fig1B_qc_pca_paired.png	PCA of paired samples with patient linking segments.
+Fig2A	DE	figures_v2/final/Fig2A_de_ma_plot_refined.png	Refined MA plot with color-coded significant genes.
+Fig2B	DE	figures_v2/final/Fig2B_de_volcano_refined.png	Refined volcano plot with top significant labels.
+Fig2C	DE	figures_v2/final/Fig2C_de_heatmap_top40.png	Heatmap of top 40 DE genes across paired samples.
+Fig3A	Biology	figures_v2/final/Fig3A_bio_hallmark_gsea.png	Hallmark GSEA summary of top pathways by direction.
+Fig3B	Biology	figures_v2/final/Fig3B_bio_go_bp_dotplot.png	GO BP dot plot summarizing top over-represented terms.

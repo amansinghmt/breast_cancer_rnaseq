@@ -1,0 +1,2 @@
+figure_id	filename	purpose	inputs
+F01	F01_qc_library_size_pairs.png	QC: paired cohort library size dumbbell plot with 1e6 threshold	data/metadata/sample_manifest.tsv; results/qc/qc_summary.tsv

@@ -9,3 +9,8 @@ __pycache__/
 *.pyc
 renv/library/
 renv/staging/
+
+# renv
+renv/cache/
+renv/library/
+renv/staging/
