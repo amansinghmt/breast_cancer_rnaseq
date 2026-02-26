@@ -7,3 +7,5 @@ data/processed/
 .vscode/
 __pycache__/
 *.pyc
+renv/library/
+renv/staging/

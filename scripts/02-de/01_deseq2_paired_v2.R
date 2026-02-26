@@ -6,6 +6,7 @@ suppressPackageStartupMessages({
   library(dplyr)
 })
 
+# (1) Load inputs
 manifest_path <- "data/metadata/sample_manifest.tsv"
 counts_path <- "data/processed/counts.tsv"
 
@@ -23,6 +24,9 @@ required_manifest_cols <- c(
 )
 
 manifest <- readr::read_tsv(manifest_path, show_col_types = FALSE)
+counts <- readr::read_tsv(counts_path, show_col_types = FALSE)
+
+# (2) Validate
 missing_manifest_cols <- setdiff(required_manifest_cols, colnames(manifest))
 if (length(missing_manifest_cols) > 0) {
   stop(
@@ -97,7 +101,6 @@ if (nrow(bad_pairs) > 0) {
   )
 }
 
-counts <- readr::read_tsv(counts_path, show_col_types = FALSE)
 if (!"gene_id" %in% colnames(counts)) {
   stop("Counts file must include a 'gene_id' column.")
 }
@@ -130,9 +133,32 @@ ordered_samples <- manifest_samples
 counts_subset <- counts %>%
   select(gene_id, all_of(ordered_samples))
 
-count_matrix <- as.matrix(counts_subset[, -1])
-rownames(count_matrix) <- counts_subset$gene_id
-count_matrix <- round(count_matrix)
+count_matrix_numeric <- as.matrix(counts_subset[, -1])
+rownames(count_matrix_numeric) <- counts_subset$gene_id
+
+if (!is.numeric(count_matrix_numeric)) {
+  stop("Counts matrix contains non-numeric values.")
+}
+if (any(is.na(count_matrix_numeric))) {
+  stop("Counts matrix contains NA values.")
+}
+if (any(count_matrix_numeric < 0)) {
+  stop("Counts matrix contains negative values.")
+}
+
+max_abs_dev <- max(abs(count_matrix_numeric - round(count_matrix_numeric)))
+if (!is.finite(max_abs_dev) || max_abs_dev > 1e-6) {
+  stop(
+    paste0(
+      "counts.tsv is not raw counts",
+      " (max abs deviation from integer = ",
+      signif(max_abs_dev, 6),
+      ")"
+    )
+  )
+}
+
+count_matrix <- round(count_matrix_numeric)
 storage.mode(count_matrix) <- "integer"
 
 col_data <- manifest_paired %>%
@@ -148,6 +174,7 @@ rownames(col_data) <- col_data$sample_id
 stopifnot(identical(ordered_samples, colnames(count_matrix)))
 stopifnot(identical(ordered_samples, col_data$sample_id))
 
+# (3) Build DESeq2
 dds <- DESeqDataSetFromMatrix(
   countData = count_matrix,
   colData = col_data,
@@ -179,6 +206,7 @@ if (requireNamespace("apeglm", quietly = TRUE)) {
   cat("Skipping lfcShrink: package 'apeglm' is not available.\n")
 }
 
+# (4) Save outputs
 dir.create(dirname(results_path), recursive = TRUE, showWarnings = FALSE)
 dir.create(dirname(ma_plot_path), recursive = TRUE, showWarnings = FALSE)
 
@@ -194,6 +222,7 @@ dev.off()
 
 capture.output(sessionInfo(), file = session_info_path)
 
+# (5) Summary
 sig_mask <- !is.na(res_df$padj) & res_df$padj < 0.05
 top10 <- res_df %>%
   filter(!is.na(padj)) %>%
@@ -201,6 +230,7 @@ top10 <- res_df %>%
   select(gene_id, log2FoldChange, padj) %>%
   slice_head(n = 10)
 
+cat("counts integrity check passed (max abs deviation from integer):", signif(max_abs_dev, 6), "\n")
 cat("number of paired patients used:", n_distinct(manifest_paired$patient_id), "\n")
 cat("number of samples used:", nrow(manifest_paired), "\n")
 cat("number of genes tested:", nrow(res_df), "\n")

@@ -210,29 +210,47 @@ hallmark_sets <- msigdbr::msigdbr(species = "Homo sapiens", collection = "H") %>
 hallmark_pathways <- split(hallmark_sets$gene_symbol, hallmark_sets$gs_name)
 
 gsea_df <- data.frame()
+gsea_method_used <- "none"
 if (nrow(de_symbol_rank) > 0) {
   stats <- de_symbol_rank$rank_metric
   names(stats) <- de_symbol_rank$SYMBOL
   stats <- sort(stats, decreasing = TRUE)
   stats <- stats[!duplicated(names(stats))]
 
-  gsea_raw <- fgsea::fgsea(
-    pathways = hallmark_pathways,
-    stats = stats,
-    minSize = 15,
-    maxSize = 500,
-    nperm = 10000
-  )
+  set.seed(123)
+  if ("fgseaMultilevel" %in% getNamespaceExports("fgsea")) {
+    gsea_method_used <- "fgseaMultilevel"
+    gsea_raw <- fgsea::fgseaMultilevel(
+      pathways = hallmark_pathways,
+      stats = stats,
+      minSize = 15,
+      maxSize = 500
+    )
+  } else {
+    gsea_method_used <- "fgsea (nperm=10000)"
+    gsea_raw <- fgsea::fgsea(
+      pathways = hallmark_pathways,
+      stats = stats,
+      minSize = 15,
+      maxSize = 500,
+      nperm = 10000
+    )
+  }
 
-  gsea_df <- as.data.frame(gsea_raw) %>%
+  gsea_tbl <- as.data.frame(gsea_raw) %>%
     mutate(
       leadingEdge_genes = vapply(
         leadingEdge,
         function(x) paste(x, collapse = ";"),
         character(1)
       )
-    ) %>%
-    dplyr::select(pathway, NES, padj, size, pval, ES, nMoreExtreme, leadingEdge_genes) %>%
+    )
+  gsea_cols <- intersect(
+    c("pathway", "NES", "padj", "size", "pval", "ES", "nMoreExtreme", "leadingEdge_genes"),
+    colnames(gsea_tbl)
+  )
+  gsea_df <- gsea_tbl %>%
+    dplyr::select(all_of(gsea_cols)) %>%
     arrange(padj)
 }
 
@@ -244,6 +262,7 @@ cat("GO keyType used:", go_keytype_used, "\n")
 cat("GO universe size:", go_universe_n, "\n")
 cat("GO sig gene count used in ORA:", go_sig_input_n, "\n")
 cat("GO enriched terms (p.adjust < 0.05):", go_sig_term_count, "\n")
+cat("Hallmark GSEA method used:", gsea_method_used, "\n")
 
 go_top10 <- if (nrow(go_df) > 0) {
   go_df %>% arrange(p.adjust) %>% dplyr::select(Description, p.adjust) %>% slice_head(n = 10)
