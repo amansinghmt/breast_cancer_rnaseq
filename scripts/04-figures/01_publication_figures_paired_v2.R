@@ -179,7 +179,8 @@ base_theme <- theme_minimal(base_size = 14) +
     axis.text = element_text(size = 11),
     legend.position = "top",
     legend.title = element_text(size = 12),
-    legend.text = element_text(size = 11)
+    legend.text = element_text(size = 11),
+    plot.margin = margin(10, 10, 10, 10)
   )
 
 label_df <- data.frame(
@@ -189,7 +190,29 @@ label_df <- data.frame(
   stringsAsFactors = FALSE
 )
 
-f01_plot <- ggplot() +
+help_items <- c(
+  "Dot = one sample",
+  "Line = matched pair (paired design = same patient)",
+  "Library size (sequencing depth = total reads)",
+  "Log10 scale (log scale)",
+  "Dashed line = QC minimum (minimum acceptable reads) = 1e6",
+  "If a dot is left of dashed line -> low-depth sample (risky)"
+)
+
+wrap_width <- 30
+help_text <- paste(
+  vapply(
+    help_items,
+    function(item) {
+      wrapped <- strwrap(item, width = wrap_width, initial = "- ", exdent = 2)
+      paste(wrapped, collapse = "\n")
+    },
+    character(1)
+  ),
+  collapse = "\n"
+)
+
+main_plot <- ggplot() +
   geom_segment(
     data = segment_df,
     aes(
@@ -222,14 +245,70 @@ f01_plot <- ggplot() +
     color = "#333333"
   ) +
   scale_color_manual(values = palette_condition, name = "Condition") +
-  scale_x_log10(labels = scales::label_number(big.mark = ",")) +
+  scale_x_log10(
+    breaks = c(1e6, 3e6, 1e7, 3e7, 1e8),
+    labels = c("1e6", "3e6", "1e7", "3e7", "1e8"),
+    limits = c(NA, 1e8),
+    expand = expansion(mult = c(0.02, 0.08))
+  ) +
   labs(
     title = "Library size per sample (paired cohort)",
     subtitle = subtitle_text,
     x = "Library size (reads, log10 scale)",
     y = "Patient ID"
   ) +
-  base_theme
+  coord_cartesian(clip = "off") +
+  base_theme +
+  theme(plot.margin = margin(10, 6, 10, 10))
+
+if (requireNamespace("patchwork", quietly = TRUE)) {
+  help_panel <- ggplot() +
+    annotate(
+      "text",
+      x = 0,
+      y = 1,
+      label = "How to read this figure",
+      hjust = 0,
+      vjust = 1,
+      fontface = "bold",
+      size = 4.2
+    ) +
+    annotate(
+      "text",
+      x = 0,
+      y = 0.9,
+      label = help_text,
+      hjust = 0,
+      vjust = 1,
+      size = 3.2,
+      lineheight = 1.1
+    ) +
+    coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), clip = "off") +
+    theme_void() +
+    theme(
+      plot.margin = margin(10, 10, 10, 0)
+    )
+
+  f01_plot <- main_plot + help_panel + patchwork::plot_layout(widths = c(4.8, 1.2))
+} else {
+  help_x <- max(plot_df$library_size, na.rm = TRUE) * 1.35
+  help_y <- patient_levels[[length(patient_levels)]]
+
+  f01_plot <- main_plot +
+    annotate(
+      "label",
+      x = help_x,
+      y = help_y,
+      label = paste("How to read this figure\n", help_text),
+      hjust = 0,
+      vjust = 1,
+      size = 3.0,
+      label.size = 0.2,
+      fill = "white",
+      color = "#222222",
+      lineheight = 1.1
+    )
+}
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
