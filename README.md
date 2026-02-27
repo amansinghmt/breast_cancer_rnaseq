@@ -1,93 +1,136 @@
-# Breast cancer RNA-seq analysis (GSE306117)
+# Breast Cancer RNA-seq (GSE306117)
 
-Differential expression and pathway analysis of breast cancer RNA-seq data from GEO GSE306117.
-Primary comparison: Tumor vs Normal, adjusting for LFS status.
-Includes reproducible metadata generation, QC, DE, and enrichment workflows.
+## Project Summary
+This repository reproduces a paired RNA-seq analysis of breast cancer samples from GEO
+accession GSE306117. The primary question is differential expression between Tumor and
+matched Normal tissue using a paired design, followed by pathway interpretation with
+Hallmark GSEA and GO Biological Process ORA. The stable v2 workflow operates on 21 matched
+Tumor/Normal pairs (42 samples) selected through the manifest rules in the pipeline.
 
-## Repository structure
-- data/raw (gitignored)
-- data/processed (gitignored)
-- data/metadata (tracked)
-- scripts/00-metadata
-- scripts/01-qc
-- scripts/02-de
-- scripts/03-pathways
-- figures/qc, figures/de, figures/enrichment
-- results/differential_expression, results/enrichment
+## Reproducibility (One Command)
+Run the full recommended pipeline from scratch:
 
-## Environment setup
-A) Python venv
+```bash
+bash scripts/run_v2.sh
+```
+
+This command regenerates all v2 outputs and performs strict validation. It exits with a
+non-zero status if required outputs are missing/empty or manifest/figure contracts fail.
+
+## Repository Layout
+Key directories:
+
+- `data/`: raw inputs, processed counts, metadata
+- `scripts/`: pipeline scripts (`00-metadata`, `01-qc`, `02-de`, `03-pathways`, `04-figures`)
+- `results_v2/`: validated v2 analysis outputs, manifests, logs
+- `figures_v2/`: final figures (`final/`) and archived prior runs (`archive/`)
+
+Gitignored data directories:
+
+- `data/raw/`
+- `data/processed/`
+
+## Requirements
+R environment (renv):
+
+```r
+install.packages("renv")
+renv::restore()
+```
+
+Python environment (`.venv` recommended):
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.lock
 ```
 
-B) R package restore (renv)
-```r
-install.packages("renv")
-renv::restore()
-```
+Notes:
 
-## Reproduce the analysis
-1) metadata: `python scripts/00-metadata/01_make_metadata.py`
-2) merge counts (htseq): `python scripts/01-qc/02_merge_htseq_counts.py`
-3) qc plots: `python scripts/01-qc/03_qc_plots.py`
-4) deseq2: `Rscript scripts/02-de/01_deseq2_tumor_vs_normal.R`
-5) volcano + heatmap: `Rscript scripts/02-de/02_volcano_heatmap.R`
-6) enrichment: `Rscript scripts/03-pathways/01_enrichment_hallmark_go.R`
+- `requirements.lock` is the pinned Python dependency set used in this repo.
+- `requirements.txt` also exists as a minimal unpinned list.
+- `scripts/run_v2.sh` uses `.venv/bin/python3` if present; otherwise it falls back to
+  `python3` on your `PATH`.
+- `scripts/run_v2.sh` preflight also requires:
+  - `renv.lock`
+  - `data/raw/GSE306117_series_matrix.txt`
+  - `data/raw/GSE306117_RAW/`
 
-## V2 Paired Pipeline (recommended)
-Run from scratch:
+### Quickstart
 ```bash
-python3 scripts/00-metadata/01_make_metadata.py
-python3 scripts/01-qc/02_merge_htseq_counts.py
-python3 scripts/01-qc/03_qc_plots.py
-python3 scripts/00-metadata/02_make_sample_manifest_v2.py
-Rscript scripts/02-de/01_deseq2_paired_v2.R
-Rscript scripts/03-pathways/01_enrichment_paired_v2.R
-Rscript scripts/04-figures/01_publication_figures_paired_v2.R
+python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.lock
+Rscript --vanilla -e 'if(!requireNamespace("renv", quietly=TRUE)) install.packages("renv"); renv::restore(prompt=FALSE)'
+bash scripts/run_v2.sh
 ```
 
-One command:
-```bash
-./scripts/run_v2.sh
-```
+## What The Pipeline Does (A–E)
+- **Step A: metadata + paired manifest**
+  - Runs metadata parsing, HTSeq count merging, QC summaries/plots, and paired manifest
+    construction.
+  - Validates paired manifest structure and required columns, then writes
+    `results_v2/metadata/paired_manifest.tsv`.
+- **Step B: paired DESeq2 differential expression**
+  - Runs `scripts/02-de/01_deseq2_paired_v2.R` with design:
+    `design = ~ patient_id + condition_main`.
+  - Validates DE columns and that `samples_used` matches the paired manifest cohort.
+- **Step C: enrichment**
+  - Runs Hallmark GSEA and GO BP ORA via
+    `scripts/03-pathways/01_enrichment_paired_v2.R`.
+  - Determinism controls in code:
+    - seed from `PIPELINE_SEED`
+    - fixed GSEA method: `fgseaMultilevel` with `BiocParallel::SerialParam()`
+    - required DE input columns for enrichment prep include
+      `log2FoldChange_shrunk`, `padj`, `pvalue`.
+- **Step D: figures and naming contract**
+  - Generates figure sources via all v2 figure scripts.
+  - Copies/standardizes final set to exactly:
+    `figures_v2/final/F01.png` ... `F07.png`.
+  - Archives non-canonical files out of `figures_v2/final/`.
+- **Step E: strict final validation + manifests + logs**
+  - Enforces required outputs as non-empty.
+  - Enforces figure folder contract (exactly F01–F07).
+  - Writes checksum manifests and timestamped run log.
 
-V2 outputs are written under:
-- `results_v2/differential_expression`
-- `results_v2/enrichment`
-- `figures_v2/de`
-- `figures_v2/final`
-- `results_v2/figures`
+## Outputs (Authoritative)
+These are the required outputs enforced by `scripts/run_v2.sh`.
 
-## Key outputs
-- figures/qc/library_size.png
-- figures/qc/pca.png
-- figures/de/ma_plot.png
-- figures/de/volcano.png
-- figures/de/heatmap_top50.png
-- figures/enrichment/hallmark_gsea_top10.png
-- figures/enrichment/go_barplot_top15.png
-- results/differential_expression/deseq2_results.tsv
-- results/differential_expression/top_genes.tsv
-- results/enrichment/hallmark_gsea.tsv
-- results/enrichment/go_enrich.tsv
+### Metadata
+- `results_v2/metadata/paired_manifest.tsv`
 
-V2 publication-ready figure set:
-- figures_v2/final/Fig1A_qc_library_size_pairs.png
-- figures_v2/final/Fig1B_qc_pca_paired.png
-- figures_v2/final/Fig2A_de_ma_plot_refined.png
-- figures_v2/final/Fig2B_de_volcano_refined.png
-- figures_v2/final/Fig2C_de_heatmap_top40.png
-- figures_v2/final/Fig3A_bio_hallmark_gsea.png
-- figures_v2/final/Fig3B_bio_go_bp_dotplot.png
-- results_v2/figures/final_figure_manifest_paired_v2.tsv
+### Differential Expression
+- `results_v2/deseq2/deseq2_paired_v2_results.tsv`
+- `results_v2/deseq2/deseq2_paired_v2_samples_used.tsv`
+- `results_v2/deseq2/sessionInfo_paired_v2.txt`
 
-## Notes / caveats
-- Raw GEO series matrix had no expression rows; counts were obtained from GEO supplementary HTSeq count files and merged.
-- data/raw and data/processed are gitignored due to size; regenerate with scripts.
-- GEO landing page: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE306117
+### Enrichment
+- `results_v2/enrichment/hallmark_gsea_paired_v2.tsv`
+- `results_v2/enrichment/go_bp_ora_paired_v2.tsv`
+- `results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt`
+
+### Figures (Final Publication Contract)
+- `figures_v2/final/F01.png` (paired cohort library size QC)
+- `figures_v2/final/F02.png` (paired cohort PCA QC)
+- `figures_v2/final/F03.png` (DE MA plot)
+- `figures_v2/final/F04.png` (DE volcano plot)
+- `figures_v2/final/F05.png` (top DE genes heatmap)
+- `figures_v2/final/F06.png` (Hallmark GSEA NES summary)
+- `figures_v2/final/F07.png` (GO BP ORA summary)
+
+### Manifests, Session, Logs
+- `results_v2/fig_manifest.tsv`
+- `results_v2/output_manifest.tsv`
+- `results_v2/sessionInfo.txt`
+- `results_v2/logs/run_v2_*.log`
+
+## Notes / Caveats
+- Counts used for analysis are built by merging GEO supplementary HTSeq count files from
+  `data/raw/GSE306117_RAW` via `scripts/01-qc/02_merge_htseq_counts.py`.
+- Metadata are parsed from `data/raw/GSE306117_series_matrix.txt`.
+- Determinism in v2 includes a fixed pipeline seed (`PIPELINE_SEED`, default `20260227`)
+  and deterministic enrichment execution (`fgseaMultilevel` with `SerialParam`).
+- A legacy non-v2 workflow still exists under older `results/` and non-v2 scripts, but
+  `scripts/run_v2.sh` is the default and recommended path.
 
 ## Citation
 Data source: NCBI GEO accession GSE306117.

@@ -1,8 +1,0 @@
-figure_id	filename	purpose	inputs
-F01	F01_qc_library_size_pairs.png	QC: paired cohort library size dumbbell plot with 1e6 threshold	data/metadata/sample_manifest.tsv; results/qc/qc_summary.tsv
-F02	F02_qc_pca_pairs.png	QC: PCA of paired cohort with patient-matched pair lines (Normal vs Tumor)	data/metadata/sample_manifest.tsv; (expression matrix or counts.tsv as used)
-F03	F03_de_ma_paired_v2.png	DE summary: MA plot (log2FC vs mean expression) for paired Tumor vs Normal	results_v2/differential_expression/deseq2_paired_v2_results.tsv
-F04	F04_de_volcano_paired_v2.png	DE summary: volcano plot (effect size vs significance) for paired Tumor vs Normal	results_v2/differential_expression/deseq2_paired_v2_results.tsv
-F05	F05_de_heatmap_top40_paired_v2.png	DE summary: heatmap of top DE genes (row z-scored expression) in paired cohort	sample_manifest.tsv; deseq2_paired_v2_results.tsv; expression source used
-F06	F06_bio_hallmark_nes_paired_v2.png	Biology summary: Hallmark GSEA NES barplot (Tumor vs Normal, paired cohort)	results_v2/enrichment/hallmark_gsea_paired_v2.tsv
-F07	F07_bio_go_bp_dotplot_paired_v2.png	Biology summary: GO BP over-representation dotplot for paired cohort DE genes	results_v2/enrichment/go_bp_ora_paired_v2.tsv
