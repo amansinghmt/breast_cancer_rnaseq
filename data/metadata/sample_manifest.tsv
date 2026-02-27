@@ -1,0 +1,75 @@
+sample_id	patient_id	tissue_raw	tissue_type	condition_main	lfs_status	library_size	include_paired	exclude_reason
+GSM9193483	103	Breast Tumor	Tumor	Tumor	Non_LFS	45534668	FALSE	no_qc_passing_normal
+GSM9193484	103	Control Breast Tissue	Normal	Normal	Non_LFS	125786	FALSE	low_library_size
+GSM9193485	106	Breast Tumor	Tumor	Tumor	Non_LFS	4553028	TRUE	
+GSM9193486	106	Control Breast Tissue	Normal	Normal	Non_LFS	1581646	TRUE	
+GSM9193487	108	Breast Tumor	Tumor	Tumor	Non_LFS	3046187	FALSE	no_qc_passing_normal
+GSM9193488	108	Control Breast Tissue	Normal	Normal	Non_LFS	453564	FALSE	low_library_size
+GSM9193489	120	Breast Tumor	Tumor	Tumor	Non_LFS	5550622	TRUE	
+GSM9193490	120	Control Breast Tissue	Normal	Normal	Non_LFS	4961760	TRUE	
+GSM9193491	125	Breast Tumor	Tumor	Tumor	Non_LFS	5190958	TRUE	
+GSM9193492	125	Control Breast Tissue	Normal	Normal	Non_LFS	3119834	TRUE	
+GSM9193493	126	Control Breast Tissue	Normal	Normal	LFS	5334058	TRUE	
+GSM9193494	126	Breast Tumor	Tumor	Tumor	LFS	3830849	FALSE	duplicate_tumor_lower_library
+GSM9193495	126	Breast Tumor	Tumor	Tumor	LFS	17319648	TRUE	
+GSM9193496	126	Contralateral Breast Tissue	Unknown	NA	LFS	NA	FALSE	tissue_type_not_main;library_size_missing
+GSM9193497	128	Tissue Surrounding Breast Tumor	Surrounding	NA	LFS	2062222	FALSE	tissue_type_not_main
+GSM9193498	128	Breast Tumor	Tumor	Tumor	LFS	25537190	FALSE	no_qc_passing_normal
+GSM9193499	130	Breast Tumor	Tumor	Tumor	Non_LFS	4561260	TRUE	
+GSM9193500	130	Control Breast Tissue	Normal	Normal	Non_LFS	4517532	TRUE	
+GSM9193501	152	Breast Tumor	Tumor	Tumor	Non_LFS	2046834	TRUE	
+GSM9193502	152	Control Breast Tissue	Normal	Normal	Non_LFS	4105346	TRUE	
+GSM9193503	157	Breast Tumor	Tumor	Tumor	Non_LFS	4711050	TRUE	
+GSM9193504	157	Control Breast Tissue	Normal	Normal	Non_LFS	32338163	TRUE	
+GSM9193505	160	Breast Tumor	Tumor	Tumor	Non_LFS	3757762	TRUE	
+GSM9193506	160	Control Breast Tissue	Normal	Normal	Non_LFS	4743905	TRUE	
+GSM9193507	169	Breast Tumor	Tumor	Tumor	Non_LFS	4268849	TRUE	
+GSM9193508	169	Control Breast Tissue	Normal	Normal	Non_LFS	4251207	TRUE	
+GSM9193509	177	Breast Tumor	Tumor	Tumor	Non_LFS	4961213	TRUE	
+GSM9193510	177	Control Breast Tissue	Normal	Normal	Non_LFS	4526917	TRUE	
+GSM9193511	177	Breast Tumor	Tumor	Tumor	Non_LFS	3831296	FALSE	duplicate_tumor_lower_library
+GSM9193512	180	Control Breast Tissue	Normal	Normal	Non_LFS	62668225	TRUE	
+GSM9193513	180	Breast Tumor	Tumor	Tumor	Non_LFS	3761438	TRUE	
+GSM9193514	186	Control Breast Tissue	Normal	Normal	Non_LFS	4674597	TRUE	
+GSM9193515	186	Breast Tumor	Tumor	Tumor	Non_LFS	4179853	TRUE	
+GSM9193516	187	Control Breast Tissue	Normal	Normal	Non_LFS	4377364	TRUE	
+GSM9193517	187	Breast Tumor	Tumor	Tumor	Non_LFS	4457361	TRUE	
+GSM9193518	193	Breast Tumor	Tumor	Tumor	Non_LFS	4475095	TRUE	
+GSM9193519	193	Control Breast Tissue	Normal	Normal	Non_LFS	4294517	TRUE	
+GSM9193520	196	Control Breast Tissue	Normal	Normal	Non_LFS	5643576	TRUE	
+GSM9193521	196	Breast Tumor	Tumor	Tumor	Non_LFS	5485694	TRUE	
+GSM9193522	197	Breast Tumor	Tumor	Tumor	Non_LFS	4084652	TRUE	
+GSM9193523	197	Control Breast Tissue	Normal	Normal	Non_LFS	3873500	TRUE	
+GSM9193524	24	Contralateral Breast Tissue	Unknown	NA	LFS	NA	FALSE	tissue_type_not_main;library_size_missing
+GSM9193525	24	Breast Tumor	Tumor	Tumor	LFS	191537	FALSE	low_library_size
+GSM9193526	27	Breast Tumor	Tumor	Tumor	LFS	5483054	FALSE	no_qc_passing_normal
+GSM9193527	33	Control Breast Tissue	Normal	Normal	Non_LFS	5770261	TRUE	
+GSM9193528	33	Breast Tumor	Tumor	Tumor	Non_LFS	4357111	TRUE	
+GSM9193529	35	Breast Tumor	Tumor	Tumor	LFS	7041978	FALSE	no_qc_passing_normal
+GSM9193530	35	Tissue Surrounding Breast Tumor	Surrounding	NA	LFS	4509462	FALSE	tissue_type_not_main
+GSM9193531	35	Tissue Surrounding Breast Tumor	Surrounding	NA	LFS	3299022	FALSE	tissue_type_not_main
+GSM9193532	42	Breast Tumor	Tumor	Tumor	LFS	7659842	FALSE	no_qc_passing_normal
+GSM9193533	45	Breast Tumor	Tumor	Tumor	LFS	5528342	FALSE	no_qc_passing_normal
+GSM9193534	46	Breast Tumor	Tumor	Tumor	LFS	4925405	FALSE	no_qc_passing_normal
+GSM9193535	50	Tissue Surrounding Breast Tumor	Surrounding	NA	LFS	5325954	FALSE	tissue_type_not_main
+GSM9193536	50	Breast Tumor	Tumor	Tumor	LFS	4757984	FALSE	no_qc_passing_normal
+GSM9193537	50	Breast Tumor	Tumor	Tumor	LFS	4668934	FALSE	duplicate_tumor_lower_library;no_qc_passing_normal
+GSM9193538	53	Breast Tumor	Tumor	Tumor	LFS	14775535	FALSE	no_qc_passing_normal
+GSM9193539	57	Breast Tumor	Tumor	Tumor	Non_LFS	6378443	FALSE	no_qc_passing_normal
+GSM9193540	58	Breast Tumor	Tumor	Tumor	LFS	6075754	FALSE	no_qc_passing_normal
+GSM9193541	58	Tissue Surrounding Breast Tumor	Surrounding	NA	LFS	6475033	FALSE	tissue_type_not_main
+GSM9193542	58	Contralateral Breast Tissue	Unknown	NA	LFS	NA	FALSE	tissue_type_not_main;library_size_missing
+GSM9193543	72	Breast Tumor	Tumor	Tumor	LFS	4549298	FALSE	no_qc_passing_normal
+GSM9193544	75	Breast Tumor	Tumor	Tumor	Non_LFS	4241379	TRUE	
+GSM9193545	75	Control Breast Tissue	Normal	Normal	Non_LFS	4756476	TRUE	
+GSM9193546	84	Breast Tumor	Tumor	Tumor	LFS	6426699	FALSE	no_qc_passing_normal
+GSM9193547	84	Contralateral Breast Tissue	Unknown	NA	LFS	NA	FALSE	tissue_type_not_main;library_size_missing
+GSM9193548	85	Breast Tumor	Tumor	Tumor	Non_LFS	5310257	TRUE	
+GSM9193549	85	Control Breast Tissue	Normal	Normal	Non_LFS	4158482	TRUE	
+GSM9193550	88	Contralateral Breast Tissue	Unknown	NA	LFS	NA	FALSE	tissue_type_not_main;library_size_missing
+GSM9193551	88	Tissue Surrounding Breast Tumor	Surrounding	NA	LFS	6802787	FALSE	tissue_type_not_main
+GSM9193552	88	Breast Tumor	Tumor	Tumor	LFS	6162087	FALSE	no_qc_passing_normal
+GSM9193553	9	Breast Tumor	Tumor	Tumor	Non_LFS	3837476	TRUE	
+GSM9193554	9	Control Breast Tissue	Normal	Normal	Non_LFS	4166365	TRUE	
+GSM9193555	95	Breast Tumor	Tumor	Tumor	Non_LFS	4404838	TRUE	
+GSM9193556	95	Control Breast Tissue	Normal	Normal	Non_LFS	32787897	TRUE	

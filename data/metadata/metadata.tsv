@@ -1,75 +1,75 @@
-sample_id	title	source_name	tissue	condition	genotype	tp53_status	batch	lfs_status	use_main_tumor_vs_normal
-GSM9193483	103-B27-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193484	103-B36-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193485	106-3B-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193486	106-3L-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193487	108-3N-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193488	108-3T-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193489	120-3C-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193490	120-3S-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193491	125-3I-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193492	125-3O-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193493	126-B1-Normal	Control Breast Tissue	Control Breast Tissue	Normal	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193494	126-B4-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193495	126-B7-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP54	Mutant	LFS Samples	LFS	yes
-GSM9193496	126-D2-contralateral	Contralateral Breast Tissue	Contralateral Breast Tissue	Contralateral	Mutant TP55	Mutant	LFS Samples	LFS	no
-GSM9193497	128-2O-surrounding_R	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193498	128-2C-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193499	130-1L-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193500	130-1O-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193501	152-2F-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193502	152-NA-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193503	157-1M-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193504	157-1V-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193505	160-3C-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193506	160-3L-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193507	169-5H-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193508	169-5I-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193509	177-3C-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193510	177-3H-Tumor	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193511	177-3K-Normal	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193512	180-5C-Tumor	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193513	180-5J-Normal	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193514	186-6C-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193515	186-6Z-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193516	187-1H-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193517	187-3C-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193518	193-3F-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193519	193-3H-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193520	196-2EE-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193521	196-2M-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193522	197-2B-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193523	197-2O-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193524	24-A6-contralateral	Contralateral Breast Tissue	Contralateral Breast Tissue	Contralateral	Mutant TP53	Mutant	LFS Samples	LFS	no
-GSM9193525	24-C8-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193526	27-C-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193527	33-C3-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193528	33-C4-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193529	35-B18-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193530	35-B4-surrounding_R	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193531	35-C7-surrounding_L	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193532	42-B2-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193533	45-2-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193534	46-D3-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193535	50-1I-surrounding_R	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193536	50-1O-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193537	50-2D-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193538	53-1M-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193539	57-2E-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193540	58-2E-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193541	58-2I-surrounding	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193542	58-8E-contralateral	Contralateral Breast Tissue	Contralateral Breast Tissue	Contralateral	Mutant TP53	Mutant	LFS Samples	LFS	no
-GSM9193543	72-A1-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193544	75-1C-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193545	75-1J-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193546	84-A12-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193547	84-C16-contralateral	Contralateral Breast Tissue	Contralateral Breast Tissue	Contralateral	Mutant TP53	Mutant	LFS Samples	LFS	no
-GSM9193548	85-1E-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193549	85-1Y-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193550	88-B6-contralateral	Contralateral Breast Tissue	Contralateral Breast Tissue	Contralateral	Mutant TP53	Mutant	LFS Samples	LFS	no
-GSM9193551	88-D15-surrounding	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193552	88-D6-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes
-GSM9193553	9-6H-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193554	9-6I-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193555	95-B4-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes
-GSM9193556	95-D3-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes
+sample_id	title	source_name	tissue	condition	genotype	tp53_status	batch	lfs_status	use_main_tumor_vs_normal	patient_id	tissue_type	condition_main
+GSM9193483	103-B27-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	103	Tumor	Tumor
+GSM9193484	103-B36-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	103	Normal	Normal
+GSM9193485	106-3B-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	106	Tumor	Tumor
+GSM9193486	106-3L-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	106	Normal	Normal
+GSM9193487	108-3N-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	108	Tumor	Tumor
+GSM9193488	108-3T-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	108	Normal	Normal
+GSM9193489	120-3C-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	120	Tumor	Tumor
+GSM9193490	120-3S-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	120	Normal	Normal
+GSM9193491	125-3I-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	125	Tumor	Tumor
+GSM9193492	125-3O-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	125	Normal	Normal
+GSM9193493	126-B1-Normal	Control Breast Tissue	Control Breast Tissue	Normal	Mutant TP53	Mutant	LFS Samples	LFS	yes	126	Normal	Normal
+GSM9193494	126-B4-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	126	Tumor	Tumor
+GSM9193495	126-B7-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP54	Mutant	LFS Samples	LFS	yes	126	Tumor	Tumor
+GSM9193496	126-D2-contralateral	Contralateral Breast Tissue	Contralateral Breast Tissue	Other	Mutant TP55	Mutant	LFS Samples	LFS	no	126	Unknown	NA
+GSM9193497	128-2O-surrounding_R	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Surrounding	Mutant TP53	Mutant	LFS Samples	LFS	no	128	Surrounding	NA
+GSM9193498	128-2C-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	128	Tumor	Tumor
+GSM9193499	130-1L-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	130	Tumor	Tumor
+GSM9193500	130-1O-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	130	Normal	Normal
+GSM9193501	152-2F-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	152	Tumor	Tumor
+GSM9193502	152-NA-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	152	Normal	Normal
+GSM9193503	157-1M-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	157	Tumor	Tumor
+GSM9193504	157-1V-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	157	Normal	Normal
+GSM9193505	160-3C-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	160	Tumor	Tumor
+GSM9193506	160-3L-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	160	Normal	Normal
+GSM9193507	169-5H-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	169	Tumor	Tumor
+GSM9193508	169-5I-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	169	Normal	Normal
+GSM9193509	177-3C-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	177	Tumor	Tumor
+GSM9193510	177-3H-Tumor	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	177	Normal	Normal
+GSM9193511	177-3K-Normal	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	177	Tumor	Tumor
+GSM9193512	180-5C-Tumor	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	180	Normal	Normal
+GSM9193513	180-5J-Normal	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	180	Tumor	Tumor
+GSM9193514	186-6C-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	186	Normal	Normal
+GSM9193515	186-6Z-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	186	Tumor	Tumor
+GSM9193516	187-1H-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	187	Normal	Normal
+GSM9193517	187-3C-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	187	Tumor	Tumor
+GSM9193518	193-3F-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	193	Tumor	Tumor
+GSM9193519	193-3H-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	193	Normal	Normal
+GSM9193520	196-2EE-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	196	Normal	Normal
+GSM9193521	196-2M-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	196	Tumor	Tumor
+GSM9193522	197-2B-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	197	Tumor	Tumor
+GSM9193523	197-2O-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	197	Normal	Normal
+GSM9193524	24-A6-contralateral	Contralateral Breast Tissue	Contralateral Breast Tissue	Other	Mutant TP53	Mutant	LFS Samples	LFS	no	24	Unknown	NA
+GSM9193525	24-C8-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	24	Tumor	Tumor
+GSM9193526	27-C-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	27	Tumor	Tumor
+GSM9193527	33-C3-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	33	Normal	Normal
+GSM9193528	33-C4-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	33	Tumor	Tumor
+GSM9193529	35-B18-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	35	Tumor	Tumor
+GSM9193530	35-B4-surrounding_R	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Surrounding	Mutant TP53	Mutant	LFS Samples	LFS	no	35	Surrounding	NA
+GSM9193531	35-C7-surrounding_L	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Surrounding	Mutant TP53	Mutant	LFS Samples	LFS	no	35	Surrounding	NA
+GSM9193532	42-B2-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	42	Tumor	Tumor
+GSM9193533	45-2-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	45	Tumor	Tumor
+GSM9193534	46-D3-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	46	Tumor	Tumor
+GSM9193535	50-1I-surrounding_R	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Surrounding	Mutant TP53	Mutant	LFS Samples	LFS	no	50	Surrounding	NA
+GSM9193536	50-1O-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	50	Tumor	Tumor
+GSM9193537	50-2D-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	50	Tumor	Tumor
+GSM9193538	53-1M-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	53	Tumor	Tumor
+GSM9193539	57-2E-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	57	Tumor	Tumor
+GSM9193540	58-2E-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	58	Tumor	Tumor
+GSM9193541	58-2I-surrounding	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Surrounding	Mutant TP53	Mutant	LFS Samples	LFS	no	58	Surrounding	NA
+GSM9193542	58-8E-contralateral	Contralateral Breast Tissue	Contralateral Breast Tissue	Other	Mutant TP53	Mutant	LFS Samples	LFS	no	58	Unknown	NA
+GSM9193543	72-A1-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	72	Tumor	Tumor
+GSM9193544	75-1C-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	75	Tumor	Tumor
+GSM9193545	75-1J-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	75	Normal	Normal
+GSM9193546	84-A12-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	84	Tumor	Tumor
+GSM9193547	84-C16-contralateral	Contralateral Breast Tissue	Contralateral Breast Tissue	Other	Mutant TP53	Mutant	LFS Samples	LFS	no	84	Unknown	NA
+GSM9193548	85-1E-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	85	Tumor	Tumor
+GSM9193549	85-1Y-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	85	Normal	Normal
+GSM9193550	88-B6-contralateral	Contralateral Breast Tissue	Contralateral Breast Tissue	Other	Mutant TP53	Mutant	LFS Samples	LFS	no	88	Unknown	NA
+GSM9193551	88-D15-surrounding	Tissue Surrounding Breast Tumor	Tissue Surrounding Breast Tumor	Surrounding	Mutant TP53	Mutant	LFS Samples	LFS	no	88	Surrounding	NA
+GSM9193552	88-D6-Tumor	Breast Tumor	Breast Tumor	Tumor	Mutant TP53	Mutant	LFS Samples	LFS	yes	88	Tumor	Tumor
+GSM9193553	9-6H-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	9	Tumor	Tumor
+GSM9193554	9-6I-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	9	Normal	Normal
+GSM9193555	95-B4-Tumor	Breast Tumor	Breast Tumor	Tumor	WT TP53	WT	Non LFS Samples	Non_LFS	yes	95	Tumor	Tumor
+GSM9193556	95-D3-Normal	Control Breast Tissue	Control Breast Tissue	Normal	WT TP53	WT	Non LFS Samples	Non_LFS	yes	95	Normal	Normal

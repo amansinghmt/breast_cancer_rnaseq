@@ -1,0 +1,25 @@
+{
+  "bioconductor.version": null,
+  "external.libraries": [
+    "/opt/homebrew/lib/R/4.5/site-library",
+    "/opt/homebrew/Cellar/r/4.5.2_1/lib/R/library"
+  ],
+  "ignored.packages": [
+    "apeglm"
+  ],
+  "package.dependency.fields": [
+    "Imports",
+    "Depends",
+    "LinkingTo"
+  ],
+  "ppm.enabled": null,
+  "ppm.ignored.urls": [],
+  "r.version": null,
+  "snapshot.dev": false,
+  "snapshot.type": "implicit",
+  "use.cache": true,
+  "vcs.ignore.cellar": true,
+  "vcs.ignore.library": true,
+  "vcs.ignore.local": true,
+  "vcs.manage.ignores": true
+}

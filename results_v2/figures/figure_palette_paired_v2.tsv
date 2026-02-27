@@ -1,0 +1,6 @@
+role	hex
+Normal condition	#1B9E77
+Tumor condition	#D95F02
+DE up in normal	#1B9E77
+DE up in tumor	#D95F02
+Non-significant points	#BDBDBD

@@ -67,16 +67,20 @@ require_len("batch", batch_vals)
 def strip_prefix(x: str):
     return x.split(":", 1)[1].strip() if ":" in x else x.strip()
 
-def condition_from_tissue(t: str):
+def tissue_type_from_tissue(t: str):
     tl = t.lower()
-    if "breast tumor" in tl:
-        return "Tumor"
+    # Priority matters: surrounding/adjacent must be checked before tumor.
+    if "surrounding" in tl or "adjacent" in tl:
+        return "Surrounding"
     if "control breast tissue" in tl:
         return "Normal"
-    if "contralateral" in tl:
-        return "Contralateral"
-    if "surrounding" in tl:
-        return "Surrounding"
+    if "breast tumor" in tl:
+        return "Tumor"
+    return "Unknown"
+
+def condition_from_tissue_type(tissue_type: str):
+    if tissue_type in {"Tumor", "Normal", "Surrounding"}:
+        return tissue_type
     return "Other"
 
 def tp53_status_from_genotype(g: str):
@@ -104,25 +108,34 @@ with OUTFILE.open("w", newline="") as f:
         "tissue","condition",
         "genotype","tp53_status",
         "batch","lfs_status",
-        "use_main_tumor_vs_normal"
+        "use_main_tumor_vs_normal",
+        "patient_id","tissue_type","condition_main"
     ])
 
     for i in range(n):
         tissue = strip_prefix(tissue_vals[i])
         genotype = strip_prefix(genotype_vals[i])
         batch = strip_prefix(batch_vals[i])
+        patient_id = title[i].split("-", 1)[0].strip()
 
-        condition = condition_from_tissue(tissue)
+        tissue_type = tissue_type_from_tissue(tissue)
+        condition = condition_from_tissue_type(tissue_type)
+        condition_main = condition if condition in {"Tumor", "Normal"} else "NA"
+        if tissue_type == "Surrounding" and condition_main != "NA":
+            raise SystemExit(
+                f"ERROR: Surrounding sample {sample_id[i]} has invalid condition_main={condition_main}"
+            )
         tp53_status = tp53_status_from_genotype(genotype)
         lfs_status = lfs_status_from_batch(batch)
-        use_main = "yes" if condition in {"Tumor","Normal"} else "no"
+        use_main = "yes" if condition_main in {"Tumor","Normal"} else "no"
 
         w.writerow([
             sample_id[i], title[i], source_name[i],
             tissue, condition,
             genotype, tp53_status,
             batch, lfs_status,
-            use_main
+            use_main,
+            patient_id, tissue_type, condition_main
         ])
 
 print(f"Wrote {OUTFILE} with {n} samples.")

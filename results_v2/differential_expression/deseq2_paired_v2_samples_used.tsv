@@ -1,0 +1,43 @@
+sample_id	patient_id	tissue_raw	tissue_type	condition_main	lfs_status	library_size	include_paired	exclude_reason
+GSM9193486	106	Control Breast Tissue	Normal	Normal	Non_LFS	1581646	TRUE	NA
+GSM9193485	106	Breast Tumor	Tumor	Tumor	Non_LFS	4553028	TRUE	NA
+GSM9193490	120	Control Breast Tissue	Normal	Normal	Non_LFS	4961760	TRUE	NA
+GSM9193489	120	Breast Tumor	Tumor	Tumor	Non_LFS	5550622	TRUE	NA
+GSM9193492	125	Control Breast Tissue	Normal	Normal	Non_LFS	3119834	TRUE	NA
+GSM9193491	125	Breast Tumor	Tumor	Tumor	Non_LFS	5190958	TRUE	NA
+GSM9193493	126	Control Breast Tissue	Normal	Normal	LFS	5334058	TRUE	NA
+GSM9193495	126	Breast Tumor	Tumor	Tumor	LFS	17319648	TRUE	NA
+GSM9193500	130	Control Breast Tissue	Normal	Normal	Non_LFS	4517532	TRUE	NA
+GSM9193499	130	Breast Tumor	Tumor	Tumor	Non_LFS	4561260	TRUE	NA
+GSM9193502	152	Control Breast Tissue	Normal	Normal	Non_LFS	4105346	TRUE	NA
+GSM9193501	152	Breast Tumor	Tumor	Tumor	Non_LFS	2046834	TRUE	NA
+GSM9193504	157	Control Breast Tissue	Normal	Normal	Non_LFS	32338163	TRUE	NA
+GSM9193503	157	Breast Tumor	Tumor	Tumor	Non_LFS	4711050	TRUE	NA
+GSM9193506	160	Control Breast Tissue	Normal	Normal	Non_LFS	4743905	TRUE	NA
+GSM9193505	160	Breast Tumor	Tumor	Tumor	Non_LFS	3757762	TRUE	NA
+GSM9193508	169	Control Breast Tissue	Normal	Normal	Non_LFS	4251207	TRUE	NA
+GSM9193507	169	Breast Tumor	Tumor	Tumor	Non_LFS	4268849	TRUE	NA
+GSM9193510	177	Control Breast Tissue	Normal	Normal	Non_LFS	4526917	TRUE	NA
+GSM9193509	177	Breast Tumor	Tumor	Tumor	Non_LFS	4961213	TRUE	NA
+GSM9193512	180	Control Breast Tissue	Normal	Normal	Non_LFS	62668225	TRUE	NA
+GSM9193513	180	Breast Tumor	Tumor	Tumor	Non_LFS	3761438	TRUE	NA
+GSM9193514	186	Control Breast Tissue	Normal	Normal	Non_LFS	4674597	TRUE	NA
+GSM9193515	186	Breast Tumor	Tumor	Tumor	Non_LFS	4179853	TRUE	NA
+GSM9193516	187	Control Breast Tissue	Normal	Normal	Non_LFS	4377364	TRUE	NA
+GSM9193517	187	Breast Tumor	Tumor	Tumor	Non_LFS	4457361	TRUE	NA
+GSM9193519	193	Control Breast Tissue	Normal	Normal	Non_LFS	4294517	TRUE	NA
+GSM9193518	193	Breast Tumor	Tumor	Tumor	Non_LFS	4475095	TRUE	NA
+GSM9193520	196	Control Breast Tissue	Normal	Normal	Non_LFS	5643576	TRUE	NA
+GSM9193521	196	Breast Tumor	Tumor	Tumor	Non_LFS	5485694	TRUE	NA
+GSM9193523	197	Control Breast Tissue	Normal	Normal	Non_LFS	3873500	TRUE	NA
+GSM9193522	197	Breast Tumor	Tumor	Tumor	Non_LFS	4084652	TRUE	NA
+GSM9193527	33	Control Breast Tissue	Normal	Normal	Non_LFS	5770261	TRUE	NA
+GSM9193528	33	Breast Tumor	Tumor	Tumor	Non_LFS	4357111	TRUE	NA
+GSM9193545	75	Control Breast Tissue	Normal	Normal	Non_LFS	4756476	TRUE	NA
+GSM9193544	75	Breast Tumor	Tumor	Tumor	Non_LFS	4241379	TRUE	NA
+GSM9193549	85	Control Breast Tissue	Normal	Normal	Non_LFS	4158482	TRUE	NA
+GSM9193548	85	Breast Tumor	Tumor	Tumor	Non_LFS	5310257	TRUE	NA
+GSM9193554	9	Control Breast Tissue	Normal	Normal	Non_LFS	4166365	TRUE	NA
+GSM9193553	9	Breast Tumor	Tumor	Tumor	Non_LFS	3837476	TRUE	NA
+GSM9193556	95	Control Breast Tissue	Normal	Normal	Non_LFS	32787897	TRUE	NA
+GSM9193555	95	Breast Tumor	Tumor	Tumor	Non_LFS	4404838	TRUE	NA
