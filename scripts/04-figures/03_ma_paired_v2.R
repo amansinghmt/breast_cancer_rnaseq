@@ -21,7 +21,7 @@ suppressPackageStartupMessages({
   library(scales)
 })
 
-de_path <- "results_v2/differential_expression/deseq2_paired_v2_results.tsv"
+de_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
 figure_dir <- "figures_v2/final"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F03_de_ma_paired_v2.png")
@@ -194,7 +194,7 @@ new_row <- data.frame(
   figure_id = "F03",
   filename = "F03_de_ma_paired_v2.png",
   purpose = "DE summary: MA plot (log2FC vs mean expression) for paired Tumor vs Normal",
-  inputs = "results_v2/differential_expression/deseq2_paired_v2_results.tsv",
+  inputs = "results_v2/deseq2/deseq2_paired_v2_results.tsv",
   stringsAsFactors = FALSE
 )
 
@@ -217,4 +217,3 @@ out_size <- if (out_exists) file.info(output_path)$size else NA_integer_
 cat("significant genes count (padj<0.05 & |LFC|>=1):", sig_count, "\n")
 cat("output file exists:", out_exists, "\n")
 cat("output file size:", out_size, "\n")
-

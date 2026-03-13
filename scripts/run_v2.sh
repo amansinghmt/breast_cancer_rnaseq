@@ -309,10 +309,6 @@ PY
 step "Step B: DESeq2 paired differential expression"
 run_r_script scripts/02-de/01_deseq2_paired_v2.R
 
-cp -f results_v2/differential_expression/deseq2_paired_v2_results.tsv results_v2/deseq2/deseq2_paired_v2_results.tsv
-cp -f results_v2/differential_expression/deseq2_paired_v2_samples_used.tsv results_v2/deseq2/deseq2_paired_v2_samples_used.tsv
-cp -f results_v2/differential_expression/sessionInfo_paired_v2.txt results_v2/deseq2/sessionInfo_paired_v2.txt
-
 # Validation block: DE table must be non-empty with required columns, and samples_used
 # must match the paired manifest cohort exactly (IDs + patient/condition labels).
 run_python - "${REPO_ROOT}" <<'PY'

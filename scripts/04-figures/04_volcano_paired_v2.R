@@ -21,7 +21,7 @@ suppressPackageStartupMessages({
   library(scales)
 })
 
-de_path <- "results_v2/differential_expression/deseq2_paired_v2_results.tsv"
+de_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
 figure_dir <- "figures_v2/final"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F04_de_volcano_paired_v2.png")
@@ -275,7 +275,7 @@ new_row <- data.frame(
   figure_id = "F04",
   filename = "F04_de_volcano_paired_v2.png",
   purpose = "DE summary: volcano plot (effect size vs significance) for paired Tumor vs Normal",
-  inputs = "results_v2/differential_expression/deseq2_paired_v2_results.tsv",
+  inputs = "results_v2/deseq2/deseq2_paired_v2_results.tsv",
   stringsAsFactors = FALSE
 )
 

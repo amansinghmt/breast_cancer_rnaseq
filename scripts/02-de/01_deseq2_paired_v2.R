@@ -9,9 +9,9 @@
 #   - data/processed/counts.tsv
 #
 # Outputs:
-#   - results_v2/differential_expression/deseq2_paired_v2_results.tsv
-#   - results_v2/differential_expression/deseq2_paired_v2_samples_used.tsv
-#   - results_v2/differential_expression/sessionInfo_paired_v2.txt
+#   - results_v2/deseq2/deseq2_paired_v2_results.tsv
+#   - results_v2/deseq2/deseq2_paired_v2_samples_used.tsv
+#   - results_v2/deseq2/sessionInfo_paired_v2.txt
 #   - figures_v2/de/ma_plot_paired_v2.png
 #
 # Determinism / reproducibility:
@@ -72,9 +72,9 @@ suppressPackageStartupMessages({
 paired_manifest_path <- "data/metadata/sample_manifest.tsv"
 counts_path <- "data/processed/counts.tsv"
 
-de_results_path <- "results_v2/differential_expression/deseq2_paired_v2_results.tsv"
-samples_used_path <- "results_v2/differential_expression/deseq2_paired_v2_samples_used.tsv"
-session_info_path <- "results_v2/differential_expression/sessionInfo_paired_v2.txt"
+de_results_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
+samples_used_path <- "results_v2/deseq2/deseq2_paired_v2_samples_used.tsv"
+session_info_path <- "results_v2/deseq2/sessionInfo_paired_v2.txt"
 ma_plot_path <- "figures_v2/de/ma_plot_paired_v2.png"
 
 required_manifest_cols <- c(

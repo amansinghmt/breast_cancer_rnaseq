@@ -30,9 +30,9 @@ fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
 counts_path <- "data/processed/counts.tsv"
 
 expr_candidates <- c(
-  "results_v2/differential_expression/deseq2_paired_v2_vst.tsv",
-  "results_v2/differential_expression/deseq2_paired_v2_vst_matrix.tsv",
-  "results_v2/differential_expression/deseq2_paired_v2_log2cpm.tsv"
+  "results_v2/deseq2/deseq2_paired_v2_vst.tsv",
+  "results_v2/deseq2/deseq2_paired_v2_vst_matrix.tsv",
+  "results_v2/deseq2/deseq2_paired_v2_log2cpm.tsv"
 )
 
 assert_columns <- function(df, cols, label) {

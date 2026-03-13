@@ -23,9 +23,9 @@ suppressPackageStartupMessages({
 })
 
 manifest_path <- "data/metadata/sample_manifest.tsv"
-de_path <- "results_v2/differential_expression/deseq2_paired_v2_results.tsv"
-vst_path <- "results_v2/differential_expression/deseq2_paired_v2_vst.tsv"
-log2cpm_path <- "results_v2/differential_expression/deseq2_paired_v2_log2cpm.tsv"
+de_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
+vst_path <- "results_v2/deseq2/deseq2_paired_v2_vst.tsv"
+log2cpm_path <- "results_v2/deseq2/deseq2_paired_v2_log2cpm.tsv"
 counts_path <- "data/processed/counts.tsv"
 
 figure_dir <- "figures_v2/final"

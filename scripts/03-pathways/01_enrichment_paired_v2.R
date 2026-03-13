@@ -6,7 +6,7 @@
 #   - GO Biological Process ORA (over-representation of significant genes).
 #
 # Inputs:
-#   - results_v2/differential_expression/deseq2_paired_v2_results.tsv
+#   - results_v2/deseq2/deseq2_paired_v2_results.tsv
 #
 # Outputs:
 #   - results_v2/enrichment/hallmark_gsea_paired_v2.tsv
@@ -95,7 +95,7 @@ if (is.na(seed_value)) {
 }
 set.seed(seed_value)
 
-de_results_path <- "results_v2/differential_expression/deseq2_paired_v2_results.tsv"
+de_results_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
 go_out <- "results_v2/enrichment/go_bp_ora_paired_v2.tsv"
 gsea_out <- "results_v2/enrichment/hallmark_gsea_paired_v2.tsv"
 session_info_out <- "results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt"
