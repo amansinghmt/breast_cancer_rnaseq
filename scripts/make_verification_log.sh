@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# LEGACY SCRIPT: retained for reference; not used by scripts/run_v2.sh.
 set -euo pipefail
 
 report_dir="report"

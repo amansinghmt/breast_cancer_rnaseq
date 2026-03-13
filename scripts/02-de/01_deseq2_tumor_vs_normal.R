@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript
+# LEGACY SCRIPT: retained for reference; not used by scripts/run_v2.sh.
 
 suppressPackageStartupMessages({
   library(DESeq2)

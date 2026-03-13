@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript
+# LEGACY SCRIPT: retained for reference; not used by scripts/run_v2.sh.
 
 required_cran <- c("readr", "dplyr", "ggplot2", "msigdbr")
 required_bioc <- c("fgsea", "clusterProfiler", "org.Hs.eg.db", "AnnotationDbi")

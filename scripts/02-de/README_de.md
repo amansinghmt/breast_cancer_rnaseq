@@ -1,21 +1,30 @@
 # Differential expression (DE)
 
-Comparison:
-- Tumor vs Normal (main tumor vs normal samples only)
+## Maintained workflow (v2 paired)
 
-Design formula:
-- ~ lfs_status + condition
+Run the repository's primary pipeline entry point:
 
-How to run:
-Rscript scripts/02-de/01_deseq2_tumor_vs_normal.R
+```bash
+bash scripts/run_v2.sh
+```
 
-Outputs:
-- results/differential_expression/deseq2_results.tsv
-- figures/de/ma_plot.png
+This calls:
 
-Additional visualization:
-- Run: Rscript scripts/02-de/02_volcano_heatmap.R
-- Outputs:
-  - figures/de/volcano.png
-  - figures/de/heatmap_top50.png
-  - results/differential_expression/top_genes.tsv
+- `scripts/02-de/01_deseq2_paired_v2.R`
+
+v2 paired design:
+
+- `~ patient_id + condition_main`
+
+v2 DE outputs are written under `results_v2/`.
+
+## Legacy workflows (deprecated, retained for reference)
+
+The scripts below are preserved for historical comparison and are not used by
+`scripts/run_v2.sh`:
+
+- `scripts/02-de/01_deseq2_tumor_vs_normal.R`
+  - Legacy design: `~ lfs_status + condition`
+  - Legacy outputs under `results/` and `figures/`
+- `scripts/02-de/02_volcano_heatmap.R`
+  - Legacy visualization path for legacy DE outputs
