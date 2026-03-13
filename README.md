@@ -76,6 +76,15 @@ Rscript --vanilla -e 'if(!requireNamespace("renv", quietly=TRUE)) install.packag
 bash scripts/run_v2.sh
 ```
 
+### Smoke Test
+
+```bash
+bash tests/smoke_test_v2.sh
+```
+
+This smoke test runs the maintained v2 workflow and validates required outputs, manifests,
+and the exact final figure contract (`F01.png` to `F07.png`).
+
 ## What `run_v2.sh` Does (A-E)
 
 - **Step A: metadata + paired manifest**
