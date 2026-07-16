@@ -15,6 +15,8 @@ CANONICAL_FILES = [
     ROOT / "results_v2/deseq2/deseq2_paired_v2_results.tsv",
     ROOT / "results_v2/enrichment/hallmark_gsea_paired_v2.tsv",
     ROOT / "results_v2/enrichment/go_bp_ora_paired_v2.tsv",
+    ROOT / "results_v2/enrichment/go_bp_ora_tumor_higher_paired_v2.tsv",
+    ROOT / "results_v2/enrichment/go_bp_ora_normal_higher_paired_v2.tsv",
     *[ROOT / f"figures_v2/final/F{i:02d}.png" for i in range(1, 8)],
 ]
 

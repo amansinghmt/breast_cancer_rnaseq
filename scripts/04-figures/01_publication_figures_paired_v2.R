@@ -262,7 +262,7 @@ main_plot <- ggplot() +
     expand = expansion(mult = c(0.02, 0.08))
   ) +
   labs(
-    title = "Library size per sample (paired cohort)",
+    title = "Retained gene-level count depth across matched Tumor-Normal samples",
     subtitle = subtitle_text,
     x = "Library size (sum of gene-level counts, log10 scale)",
     y = "Patient ID",
@@ -275,7 +275,7 @@ main_plot <- ggplot() +
   base_theme +
   theme(plot.margin = margin(10, 6, 10, 10))
 
-if (requireNamespace("patchwork", quietly = TRUE)) {
+if (FALSE && requireNamespace("patchwork", quietly = TRUE)) {
   help_panel <- ggplot() +
     annotate(
       "text",
@@ -305,23 +305,7 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 
   f01_plot <- main_plot + help_panel + patchwork::plot_layout(widths = c(4.8, 1.2))
 } else {
-  help_x <- max(plot_df$library_size, na.rm = TRUE) * 1.35
-  help_y <- patient_levels[[length(patient_levels)]]
-
-  f01_plot <- main_plot +
-    annotate(
-      "label",
-      x = help_x,
-      y = help_y,
-      label = paste("How to read this figure\n", help_text),
-      hjust = 0,
-      vjust = 1,
-      size = 3.0,
-      label.size = 0.2,
-      fill = "white",
-      color = "#222222",
-      lineheight = 1.1
-    )
+  f01_plot <- main_plot
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)

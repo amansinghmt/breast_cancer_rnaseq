@@ -77,6 +77,10 @@ step 3 "Checking enrichment outputs"
 require_nonempty_file results_v2/enrichment/hallmark_gsea_paired_v2.tsv
 require_nonempty_file results_v2/enrichment/go_bp_ora_paired_v2.tsv
 require_nonempty_file results_v2/enrichment/go_bp_ora_representative_v2.tsv
+require_nonempty_file results_v2/enrichment/go_bp_ora_tumor_higher_paired_v2.tsv
+require_nonempty_file results_v2/enrichment/go_bp_ora_normal_higher_paired_v2.tsv
+require_nonempty_file results_v2/enrichment/go_bp_ora_tumor_higher_representative_v2.tsv
+require_nonempty_file results_v2/enrichment/go_bp_ora_normal_higher_representative_v2.tsv
 require_nonempty_file results_v2/enrichment/enrichment_diagnostics_v2.tsv
 require_nonempty_file results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt
 
@@ -108,7 +112,7 @@ require_nonempty_file "$latest_log"
 printf 'Latest run log: %s\n' "$latest_log"
 
 step 7 "Checking manifest consistency"
-for entry in de_results de_vst de_diagnostics enrichment_hallmark enrichment_go_bp enrichment_go_bp_representative robustness_metrics figure_F01 figure_F02 figure_F03 figure_F04 figure_F05 figure_F06 figure_F07 figure_F01_pdf figure_F07_pdf; do
+for entry in de_results de_vst de_diagnostics enrichment_hallmark enrichment_go_bp enrichment_go_bp_representative enrichment_go_bp_tumor_higher enrichment_go_bp_normal_higher enrichment_go_bp_tumor_higher_representative enrichment_go_bp_normal_higher_representative robustness_metrics pca_sample_diagnostics figure_F01 figure_F02 figure_F03 figure_F04 figure_F05 figure_F06 figure_F07 figure_F01_pdf figure_F07_pdf; do
   require_output_manifest_entry "$entry"
 done
 

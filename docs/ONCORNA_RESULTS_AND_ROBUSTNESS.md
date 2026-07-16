@@ -19,6 +19,8 @@
 | `padj<0.05`, `|shrunk LFC|>=1` | 1,636 | Verified from canonical DE table |
 | Significant Hallmark sets | 35 of 50 | Verified from Hallmark table |
 | Significant GO BP terms | 729 of 5,102 | Verified after writing all tested terms |
+| Tumor-higher GO BP terms | 259 of 3,095 | Same background; 324/506 genes annotated |
+| Normal-higher GO BP terms | 694 of 4,686 | Same background; 712/1,130 genes annotated |
 | Final figures | F01-F07 | Verified from final folder and manifest |
 
 The previously recorded headline values all matched the preserved March 13, 2026 baseline. No discrepancy was found. Making DESeq2's independent-filter alpha incorrectly explicit as 0.05 during development changed the significant count to 6,372; that trial was rejected. The original `results()` behavior uses alpha 0.1 for filter optimization and reporting applies `padj<0.05`. The corrected rerun reproduces 6,315 exactly.
@@ -106,6 +108,8 @@ The revised PCA uses DESeq2 VST (`blind=FALSE`) rather than the previous log2-CP
 
 ### GO BP ORA
 
+The 729/5,102 result uses the combined strict list and is non-directional. It is retained as supplementary evidence only. The main directional analyses use identical background, mapping and BH rules: Tumor-higher finds 259/3,095 significant/tested terms; Normal-higher finds 694/4,686. Their shared GO-annotated background denominator is 15,233.
+
 - Statistical selected list: 1,636 genes.
 - Statistical universe: 30,244 genes with non-NA adjusted p-value.
 - GO-annotated selected denominator: 1,036.
@@ -126,7 +130,7 @@ The archived table had 729 rows because `enrichGO` was called with a 0.05 cutoff
 | F04 labels | Top eight overall | Up to four per direction | Avoid one-direction label bias |
 | F05 selection | Top 40 by padj | Balanced passing genes, VST z-scores | Documented and interpretable rule |
 | F06 | NES bars | Directional NES plus adjusted-evidence points | Display direction and evidence |
-| F07 | Top redundant terms | Semantic-similarity representatives | Readable without deleting raw terms |
+| F07 | Combined non-directional terms | Two directional panels plus presentation-only diversity cap | Directionally valid without deleting raw terms |
 | Vector output | PNG only | PNG plus PDF | Professor/publication presentation |
 
 ## Methodological changes

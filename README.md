@@ -158,6 +158,10 @@ These are required outputs enforced by `scripts/run_v2.sh`.
 - `results_v2/enrichment/hallmark_gsea_paired_v2.tsv`
 - `results_v2/enrichment/go_bp_ora_paired_v2.tsv`
 - `results_v2/enrichment/go_bp_ora_representative_v2.tsv`
+- `results_v2/enrichment/go_bp_ora_tumor_higher_paired_v2.tsv`
+- `results_v2/enrichment/go_bp_ora_normal_higher_paired_v2.tsv`
+- `results_v2/enrichment/go_bp_ora_tumor_higher_representative_v2.tsv`
+- `results_v2/enrichment/go_bp_ora_normal_higher_representative_v2.tsv`
 - `results_v2/enrichment/enrichment_diagnostics_v2.tsv`
 - `results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt`
 
@@ -177,7 +181,7 @@ These are required outputs enforced by `scripts/run_v2.sh`.
 - `figures_v2/final/F04.png` (DE volcano plot)
 - `figures_v2/final/F05.png` (top DE genes heatmap)
 - `figures_v2/final/F06.png` (Hallmark GSEA NES summary)
-- `figures_v2/final/F07.png` (GO BP ORA summary)
+- `figures_v2/final/F07.png` (directional GO BP ORA summary)
 
 ### Manifests, Session, Logs
 

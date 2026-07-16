@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+import subprocess
 
 import pandas as pd
 import streamlit as st
@@ -25,6 +26,11 @@ PATHS = {
     "hallmark": ROOT / "results_v2/enrichment/hallmark_gsea_paired_v2.tsv",
     "go": ROOT / "results_v2/enrichment/go_bp_ora_paired_v2.tsv",
     "go_representative": ROOT / "results_v2/enrichment/go_bp_ora_representative_v2.tsv",
+    "go_tumor": ROOT / "results_v2/enrichment/go_bp_ora_tumor_higher_paired_v2.tsv",
+    "go_normal": ROOT / "results_v2/enrichment/go_bp_ora_normal_higher_paired_v2.tsv",
+    "go_tumor_representative": ROOT / "results_v2/enrichment/go_bp_ora_tumor_higher_representative_v2.tsv",
+    "go_normal_representative": ROOT / "results_v2/enrichment/go_bp_ora_normal_higher_representative_v2.tsv",
+    "enrichment_diagnostics": ROOT / "results_v2/enrichment/enrichment_diagnostics_v2.tsv",
     "metrics": ROOT / "results_v2/robustness/analysis_metrics_v2.tsv",
     "thresholds": ROOT / "results_v2/robustness/de_threshold_sensitivity_v2.tsv",
     "prefilter": ROOT / "results_v2/robustness/low_count_prefilter_sensitivity_v2.tsv",
@@ -45,6 +51,8 @@ REQUIRED_PATHS = [
     PATHS["de"],
     PATHS["hallmark"],
     PATHS["go"],
+    PATHS["go_tumor"],
+    PATHS["go_normal"],
     PATHS["metrics"],
     *FIGURE_PATHS.values(),
 ]
@@ -81,6 +89,15 @@ def latest_analysis_date() -> str:
         return datetime.strptime(timestamp, "%Y%m%d_%H%M%S").strftime("%d %B %Y, %H:%M")
     except ValueError:
         return log_path.name
+
+
+def current_commit() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True
+        ).strip()
+    except (OSError, subprocess.SubprocessError):
+        return "Unknown"
 
 
 def render_figure(figure_id: str) -> None:
@@ -162,6 +179,7 @@ st.sidebar.caption("Scientific presentation layer")
 section = st.sidebar.radio("Navigate", sections)
 st.sidebar.divider()
 st.sidebar.caption(f"Latest pipeline log: {latest_analysis_date()}")
+st.sidebar.caption(f"Repository commit: {current_commit()}")
 st.sidebar.caption("Canonical workflow: v2 paired")
 
 if section == "Overview":
@@ -199,7 +217,7 @@ if section == "Overview":
     a, b, c = st.columns(3)
     a.metric("Hallmark sets with padj < 0.05", f"{int(metrics['hallmark_sets_padj_lt_0.05']):,}")
     b.metric("GO terms with padj < 0.05", f"{int(metrics['go_terms_padj_lt_0.05']):,}")
-    c.metric("Representative GO terms", f"{int(metrics['go_representative_terms']):,}")
+    c.metric("Combined GO representatives (supplement)", f"{int(metrics['go_representative_terms']):,}")
     st.caption(f"Current presentation generated from the latest successful run: {latest_analysis_date()}.")
 
 elif section == "Pipeline":
@@ -276,8 +294,8 @@ elif section == "Differential expression":
     cols = st.columns(4)
     cols[0].metric("Genes tested", f"{int(metrics['genes_tested']):,}")
     cols[1].metric("padj < 0.05", f"{int(metrics['genes_padj_lt_0.05']):,}")
-    cols[2].metric("Tumor higher", f"{int(primary['upregulated']):,}")
-    cols[3].metric("Normal higher", f"{int(primary['downregulated']):,}")
+    cols[2].metric("Tumor-higher", f"{int(primary['tumor_higher']):,}")
+    cols[3].metric("Normal-higher", f"{int(primary['normal_higher']):,}")
     with st.expander("Threshold and robustness summaries"):
         st.dataframe(strict, use_container_width=True, hide_index=True)
         st.markdown("**Predefined low-count sensitivity**")
@@ -305,7 +323,7 @@ elif section == "Pathway analysis":
     cols[0].metric("Hallmark sets tested", f"{int(metrics['hallmark_sets_tested'])}")
     cols[1].metric("Significant Hallmark sets", f"{int(metrics['hallmark_sets_padj_lt_0.05'])}")
     cols[2].metric("Significant GO BP terms", f"{int(metrics['go_terms_padj_lt_0.05'])}")
-    tabs = st.tabs(["F06 Hallmark", "F07 GO BP"])
+    tabs = st.tabs(["F06 Hallmark", "F07 Directional GO BP", "Combined GO supplement"])
     with tabs[0]:
         render_figure("F06")
         hallmark = read_tsv(str(PATHS["hallmark"]))
@@ -313,18 +331,48 @@ elif section == "Pathway analysis":
         download_table("Download Hallmark table", PATHS["hallmark"])
     with tabs[1]:
         render_figure("F07")
-        representative = read_tsv(str(PATHS["go_representative"]))
+        diagnostics = dict(
+            zip(
+                read_tsv(str(PATHS["enrichment_diagnostics"]))["metric"],
+                read_tsv(str(PATHS["enrichment_diagnostics"]))["value"],
+                strict=True,
+            )
+        )
+        direction_cols = st.columns(2)
+        direction_cols[0].metric(
+            "Tumor-higher GO terms (BH FDR < 0.05)",
+            f"{int(diagnostics['ora_tumor_higher_terms_padj_lt_0.05']):,}",
+            help="From 506 strict Tumor-higher genes; 324 map to GO annotations.",
+        )
+        direction_cols[1].metric(
+            "Normal-higher GO terms (BH FDR < 0.05)",
+            f"{int(diagnostics['ora_normal_higher_terms_padj_lt_0.05']):,}",
+            help="From 1,130 strict Normal-higher genes; 712 map to GO annotations.",
+        )
+        representative = pd.concat(
+            [
+                read_tsv(str(PATHS["go_tumor_representative"])),
+                read_tsv(str(PATHS["go_normal_representative"])),
+            ],
+            ignore_index=True,
+        )
         st.dataframe(representative, use_container_width=True, hide_index=True, height=350)
         col1, col2 = st.columns(2)
         with col1:
-            download_table("Download representative GO table", PATHS["go_representative"])
+            download_table("Download full Tumor-higher GO table", PATHS["go_tumor"])
         with col2:
-            download_table("Download full GO test table", PATHS["go"])
-    st.info(
-        "The 729 significant terms are a subset of 5,102 tested GO terms. Earlier output contained "
-        "only cutoff-passing terms, which made 729/729 appear significant. The current raw table "
-        "preserves all tested terms; semantic reduction is presentation-only."
-    )
+            download_table("Download full Normal-higher GO table", PATHS["go_normal"])
+        st.info(
+            "Both directional analyses use the same tested-gene background and BH correction. "
+            "Semantic and keyword-family reductions affect presentation only, not the full tables."
+        )
+    with tabs[2]:
+        st.warning(
+            "This table combines Tumor-higher and Normal-higher genes. It supports only processes "
+            "over-represented among genes differing between conditions; it cannot establish direction."
+        )
+        st.dataframe(read_tsv(str(PATHS["go_representative"])), use_container_width=True, hide_index=True)
+        download_table("Download complete combined GO table", PATHS["go"])
 
 elif section == "Methods explained":
     st.title("Methods explained")
@@ -351,10 +399,10 @@ elif section == "Results and interpretation":
             "Confirm with independent data and orthogonal proliferation measurements.",
         ),
         (
-            "GO BP enrichment",
-            "729 of 5,102 tested terms have padj<0.05; representative terms emphasize mitosis and chromosome segregation.",
-            "The effect-filtered gene list is enriched for cell-division-associated annotations.",
-            "GO terms are highly redundant and annotation coverage is incomplete.",
+            "Directional GO BP enrichment",
+            "259 Tumor-higher and 694 Normal-higher GO terms have BH FDR<0.05; both use the same tested background.",
+            "Tumor-higher genes are over-represented in cell-division/chromosome themes, while Normal-higher genes include circulation, muscle, extracellular-matrix and tissue-context themes.",
+            "GO terms overlap, annotation is incomplete, and bulk-cell composition may explain part of either direction.",
             "Use independent data and targeted functional assays before mechanistic claims.",
         ),
     ]

@@ -12,6 +12,10 @@
 #   - results_v2/enrichment/hallmark_gsea_paired_v2.tsv
 #   - results_v2/enrichment/go_bp_ora_paired_v2.tsv
 #   - results_v2/enrichment/go_bp_ora_representative_v2.tsv
+#   - results_v2/enrichment/go_bp_ora_tumor_higher_paired_v2.tsv
+#   - results_v2/enrichment/go_bp_ora_normal_higher_paired_v2.tsv
+#   - results_v2/enrichment/go_bp_ora_tumor_higher_representative_v2.tsv
+#   - results_v2/enrichment/go_bp_ora_normal_higher_representative_v2.tsv
 #   - results_v2/enrichment/enrichment_diagnostics_v2.tsv
 #   - results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt
 #
@@ -100,6 +104,10 @@ set.seed(seed_value)
 de_results_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
 go_out <- "results_v2/enrichment/go_bp_ora_paired_v2.tsv"
 go_representative_out <- "results_v2/enrichment/go_bp_ora_representative_v2.tsv"
+go_tumor_out <- "results_v2/enrichment/go_bp_ora_tumor_higher_paired_v2.tsv"
+go_normal_out <- "results_v2/enrichment/go_bp_ora_normal_higher_paired_v2.tsv"
+go_tumor_representative_out <- "results_v2/enrichment/go_bp_ora_tumor_higher_representative_v2.tsv"
+go_normal_representative_out <- "results_v2/enrichment/go_bp_ora_normal_higher_representative_v2.tsv"
 gsea_out <- "results_v2/enrichment/hallmark_gsea_paired_v2.tsv"
 diagnostics_out <- "results_v2/enrichment/enrichment_diagnostics_v2.tsv"
 session_info_out <- "results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt"
@@ -148,6 +156,26 @@ sig_genes <- de %>%
   pull(gene_id) %>%
   unique()
 
+tumor_sig_genes <- de %>%
+  filter(
+    !is.na(padj),
+    !is.na(lfc_for_selection),
+    padj < 0.05,
+    lfc_for_selection >= 1
+  ) %>%
+  pull(gene_id) %>%
+  unique()
+
+normal_sig_genes <- de %>%
+  filter(
+    !is.na(padj),
+    !is.na(lfc_for_selection),
+    padj < 0.05,
+    lfc_for_selection <= -1
+  ) %>%
+  pull(gene_id) %>%
+  unique()
+
 if (length(universe_genes) == 0) {
   stop("Universe is empty: no genes with non-NA padj.")
 }
@@ -172,8 +200,8 @@ de_rankable <- de %>%
 
 #### 3) Hallmark pathways retrieval + GSEA ####
 # Hallmark GSEA summarizes coordinated pathway-level shifts:
-#   NES > 0 indicates Tumor-enriched pathways (given Tumor-vs-Normal contrast),
-#   NES < 0 indicates Normal-enriched pathways.
+#   NES > 0 indicates enrichment toward the Tumor-higher side of the ranking,
+#   NES < 0 indicates enrichment toward the Normal-higher side.
 symbol_map <- AnnotationDbi::select(
   org.Hs.eg.db,
   keys = unique(de_rankable$gene_id),
@@ -258,109 +286,137 @@ if (nrow(de_symbol_rank) > 0) {
 }
 
 #### 4) GO BP ORA ####
-# GO BP ORA asks which biological processes are over-represented among significant
-# genes relative to the tested universe.
-go_result <- NULL
+# The combined analysis is retained as a non-directional supplementary result.
+# Directional analyses use the identical tested-gene universe, identifier rules,
+# enrichment parameters and semantic-reduction method.
+go_gene_lists_ensembl <- list(
+  combined = sig_genes,
+  tumor_higher = tumor_sig_genes,
+  normal_higher = normal_sig_genes
+)
 go_keytype_used <- "ENSEMBL"
-go_sig_input_n <- 0L
-go_universe_n <- 0L
+go_universe_input <- universe_genes
+go_gene_lists_input <- go_gene_lists_ensembl
 
-try_go_ensembl <- tryCatch(
-  {
-    if (length(sig_genes) == 0) {
-      NULL
-    } else {
-      go_sig_input_n <- length(sig_genes)
-      go_universe_n <- length(universe_genes)
-      clusterProfiler::enrichGO(
-        gene = sig_genes,
-        universe = universe_genes,
-        OrgDb = org.Hs.eg.db,
-        keyType = "ENSEMBL",
-        ont = "BP",
-        pAdjustMethod = "BH",
-        pvalueCutoff = 1,
-        qvalueCutoff = 1
-      )
-    }
-  },
+run_go <- function(genes, universe, keytype) {
+  if (length(genes) == 0 || length(universe) == 0) return(NULL)
+  clusterProfiler::enrichGO(
+    gene = genes,
+    universe = universe,
+    OrgDb = org.Hs.eg.db,
+    keyType = keytype,
+    ont = "BP",
+    pAdjustMethod = "BH",
+    pvalueCutoff = 1,
+    qvalueCutoff = 1
+  )
+}
+
+combined_try <- tryCatch(
+  run_go(go_gene_lists_input$combined, go_universe_input, go_keytype_used),
   error = function(e) e
 )
 
-if (inherits(try_go_ensembl, "error")) {
+if (inherits(combined_try, "error")) {
   go_keytype_used <- "ENTREZID"
   map_df <- AnnotationDbi::select(
     org.Hs.eg.db,
     keys = unique(universe_genes),
     keytype = "ENSEMBL",
-    columns = c("ENTREZID")
+    columns = "ENTREZID"
   ) %>%
     filter(!is.na(ENTREZID)) %>%
     distinct(ENSEMBL, ENTREZID)
 
-  universe_entrez <- map_df %>%
-    pull(ENTREZID) %>%
-    unique()
-  sig_entrez <- map_df %>%
-    filter(ENSEMBL %in% sig_genes) %>%
-    pull(ENTREZID) %>%
-    unique()
+  go_universe_input <- unique(map_df$ENTREZID)
+  go_gene_lists_input <- lapply(go_gene_lists_ensembl, function(ids) {
+    map_df %>%
+      filter(ENSEMBL %in% ids) %>%
+      pull(ENTREZID) %>%
+      unique()
+  })
+  combined_try <- run_go(
+    go_gene_lists_input$combined,
+    go_universe_input,
+    go_keytype_used
+  )
+}
 
-  go_universe_n <- length(universe_entrez)
-  go_sig_input_n <- length(sig_entrez)
+go_results <- list(
+  combined = combined_try,
+  tumor_higher = run_go(
+    go_gene_lists_input$tumor_higher,
+    go_universe_input,
+    go_keytype_used
+  ),
+  normal_higher = run_go(
+    go_gene_lists_input$normal_higher,
+    go_universe_input,
+    go_keytype_used
+  )
+)
 
-  if (length(sig_entrez) > 0 && length(universe_entrez) > 0) {
-    go_result <- clusterProfiler::enrichGO(
-      gene = sig_entrez,
-      universe = universe_entrez,
-      OrgDb = org.Hs.eg.db,
-      keyType = "ENTREZID",
-      ont = "BP",
-      pAdjustMethod = "BH",
-      pvalueCutoff = 1,
-      qvalueCutoff = 1
+direction_labels <- c(
+  combined = "Combined Tumor-higher and Normal-higher",
+  tumor_higher = "Tumor-higher",
+  normal_higher = "Normal-higher"
+)
+
+as_go_table <- function(result, analysis_name) {
+  if (is.null(result)) return(data.frame())
+  as.data.frame(result) %>%
+    mutate(
+      analysis_direction = unname(direction_labels[[analysis_name]]),
+      selection_rule = ifelse(
+        analysis_name == "tumor_higher",
+        "padj < 0.05 and shrunken log2FC >= 1",
+        ifelse(
+          analysis_name == "normal_higher",
+          "padj < 0.05 and shrunken log2FC <= -1",
+          "padj < 0.05 and abs(shrunken log2FC) >= 1"
+        )
+      ),
+      tested_universe_rule = "DESeq2 genes with non-NA padj",
+      p_adjust_method = "Benjamini-Hochberg"
     )
-  } else {
-    go_result <- NULL
-  }
-} else {
-  go_result <- try_go_ensembl
 }
 
-go_df <- if (!is.null(go_result)) as.data.frame(go_result) else data.frame()
-
-go_sig_term_count <- 0L
-if (nrow(go_df) > 0) {
-  go_sig_term_count <- sum(go_df$p.adjust < 0.05, na.rm = TRUE)
-}
-
-# The raw table remains complete. This separate presentation table removes closely
-# related GO terms using ontology-aware semantic similarity and keeps the best-adjusted
-# p-value representative from each redundant group.
-go_representative_df <- data.frame()
-if (!is.null(go_result) && nrow(go_df) > 0) {
-  go_sig_result <- go_result
-  go_sig_result@result <- go_sig_result@result %>%
+simplify_go <- function(result, analysis_name) {
+  if (is.null(result) || nrow(as.data.frame(result)) == 0) return(data.frame())
+  significant_result <- result
+  significant_result@result <- significant_result@result %>%
     filter(!is.na(p.adjust), p.adjust < 0.05)
+  if (nrow(significant_result@result) == 0) return(data.frame())
 
-  if (nrow(go_sig_result@result) > 0) {
-    go_simplified <- clusterProfiler::simplify(
-      go_sig_result,
-      cutoff = 0.7,
-      by = "p.adjust",
-      select_fun = min,
-      measure = "Wang"
+  simplified <- clusterProfiler::simplify(
+    significant_result,
+    cutoff = 0.7,
+    by = "p.adjust",
+    select_fun = min,
+    measure = "Wang"
+  )
+  as.data.frame(simplified) %>%
+    arrange(p.adjust) %>%
+    slice_head(n = 30) %>%
+    mutate(
+      analysis_direction = unname(direction_labels[[analysis_name]]),
+      simplification_method = "clusterProfiler::simplify",
+      semantic_measure = "Wang",
+      similarity_cutoff = 0.7,
+      representative_selection = "lowest p.adjust within semantic group; first 30 by p.adjust"
     )
-    go_representative_df <- as.data.frame(go_simplified) %>%
-      arrange(p.adjust) %>%
-      slice_head(n = 30) %>%
-      mutate(
-        simplification_method = "clusterProfiler::simplify",
-        semantic_measure = "Wang",
-        similarity_cutoff = 0.7
-      )
-  }
 }
+
+go_tables <- Map(as_go_table, go_results, names(go_results))
+go_representative_tables <- Map(simplify_go, go_results, names(go_results))
+go_df <- go_tables$combined
+go_representative_df <- go_representative_tables$combined
+go_tumor_df <- go_tables$tumor_higher
+go_normal_df <- go_tables$normal_higher
+go_tumor_representative_df <- go_representative_tables$tumor_higher
+go_normal_representative_df <- go_representative_tables$normal_higher
+
+go_sig_term_count <- sum(go_df$p.adjust < 0.05, na.rm = TRUE)
 
 parse_ratio_denominator <- function(x) {
   if (length(x) == 0 || is.na(x[[1]]) || !grepl("/", x[[1]], fixed = TRUE)) {
@@ -369,8 +425,13 @@ parse_ratio_denominator <- function(x) {
   as.integer(strsplit(as.character(x[[1]]), "/", fixed = TRUE)[[1]][[2]])
 }
 
-go_annotated_sig_n <- if (nrow(go_df) > 0) parse_ratio_denominator(go_df$GeneRatio) else NA_integer_
-go_annotated_universe_n <- if (nrow(go_df) > 0) parse_ratio_denominator(go_df$BgRatio) else NA_integer_
+go_annotated_count <- function(tbl, ratio_column) {
+  if (nrow(tbl) == 0) return(NA_integer_)
+  parse_ratio_denominator(tbl[[ratio_column]])
+}
+
+go_annotated_sig_n <- go_annotated_count(go_df, "GeneRatio")
+go_annotated_universe_n <- go_annotated_count(go_df, "BgRatio")
 
 diagnostics_df <- data.frame(
   metric = c(
@@ -385,7 +446,20 @@ diagnostics_df <- data.frame(
     "ora_go_annotated_universe_genes",
     "go_terms_tested",
     "go_terms_padj_lt_0.05",
-    "go_representative_terms_written"
+    "go_representative_terms_written",
+    "ora_tumor_higher_input_genes",
+    "ora_tumor_higher_mapped_genes",
+    "ora_tumor_higher_terms_tested",
+    "ora_tumor_higher_terms_padj_lt_0.05",
+    "ora_tumor_higher_representative_terms_written",
+    "ora_normal_higher_input_genes",
+    "ora_normal_higher_mapped_genes",
+    "ora_normal_higher_terms_tested",
+    "ora_normal_higher_terms_padj_lt_0.05",
+    "ora_normal_higher_representative_terms_written",
+    "ora_keytype",
+    "ora_multiple_testing_method",
+    "ora_semantic_reduction"
   ),
   value = c(
     nrow(de_rankable),
@@ -393,13 +467,26 @@ diagnostics_df <- data.frame(
     nrow(de_symbol_rank),
     nrow(gsea_df),
     sum(gsea_df$padj < 0.05, na.rm = TRUE),
-    go_sig_input_n,
-    go_universe_n,
+    length(sig_genes),
+    length(go_universe_input),
     go_annotated_sig_n,
     go_annotated_universe_n,
     nrow(go_df),
     go_sig_term_count,
-    nrow(go_representative_df)
+    nrow(go_representative_df),
+    length(tumor_sig_genes),
+    go_annotated_count(go_tumor_df, "GeneRatio"),
+    nrow(go_tumor_df),
+    sum(go_tumor_df$p.adjust < 0.05, na.rm = TRUE),
+    nrow(go_tumor_representative_df),
+    length(normal_sig_genes),
+    go_annotated_count(go_normal_df, "GeneRatio"),
+    nrow(go_normal_df),
+    sum(go_normal_df$p.adjust < 0.05, na.rm = TRUE),
+    nrow(go_normal_representative_df),
+    go_keytype_used,
+    "Benjamini-Hochberg",
+    "clusterProfiler::simplify; Wang similarity; cutoff 0.7; presentation only"
   ),
   stringsAsFactors = FALSE
 )
@@ -408,14 +495,19 @@ diagnostics_df <- data.frame(
 dir.create(dirname(go_out), recursive = TRUE, showWarnings = FALSE)
 readr::write_tsv(go_df, go_out)
 readr::write_tsv(go_representative_df, go_representative_out)
+readr::write_tsv(go_tumor_df, go_tumor_out)
+readr::write_tsv(go_normal_df, go_normal_out)
+readr::write_tsv(go_tumor_representative_df, go_tumor_representative_out)
+readr::write_tsv(go_normal_representative_df, go_normal_representative_out)
 readr::write_tsv(gsea_df, gsea_out)
 readr::write_tsv(diagnostics_df, diagnostics_out)
 capture.output(sessionInfo(), file = session_info_out)
 
 cat("GO keyType used:", go_keytype_used, "\n")
-cat("GO universe size:", go_universe_n, "\n")
-cat("GO sig gene count used in ORA:", go_sig_input_n, "\n")
-cat("GO enriched terms (p.adjust < 0.05):", go_sig_term_count, "\n")
+cat("GO universe input size:", length(go_universe_input), "\n")
+cat("Combined GO input/significant terms:", length(sig_genes), "/", go_sig_term_count, "\n")
+cat("Tumor-higher GO input/significant terms:", length(tumor_sig_genes), "/", sum(go_tumor_df$p.adjust < 0.05, na.rm = TRUE), "\n")
+cat("Normal-higher GO input/significant terms:", length(normal_sig_genes), "/", sum(go_normal_df$p.adjust < 0.05, na.rm = TRUE), "\n")
 cat("GO representative terms written:", nrow(go_representative_df), "\n")
 cat("Hallmark GSEA method used:", gsea_method_used, "\n")
 

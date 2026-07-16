@@ -2,7 +2,7 @@
 
 ## Abstract
 
-OncoRNA is a reproducible bulk RNA-seq analysis of GEO dataset GSE306117. It asks which genes and biological programs differ between breast Tumor tissue and matched Normal breast tissue from the same patients. The maintained workflow parses GEO metadata, merges 74 HTSeq count files, applies sample-level quality-control and pairing rules, and selects 21 patients with one Tumor and one Normal sample each. Differential expression is estimated with DESeq2 using the paired model `~ patient_id + condition_main`, which controls patient-specific baseline expression while testing the Tumor-versus-Normal contrast. Of 60,617 gene rows, 6,315 have Benjamini-Hochberg adjusted p-value below 0.05; 1,636 also have absolute shrunken log2 fold change at least 1. Hallmark GSEA identifies 35 significant gene sets, while GO Biological Process over-representation analysis identifies 729 significant terms among 5,102 tested terms. Representative pathway results emphasize cell-cycle, mitotic and chromosome-segregation-associated programs. These findings are statistical associations within one bulk-tissue cohort. They do not demonstrate causation, clinical utility, validated biomarkers or patient-level prediction. The repository includes strict cohort checks, deterministic analysis controls, output manifests, checksums, robustness summaries, seven canonical figures and a read-only presentation dashboard.
+OncoRNA is a reproducible bulk RNA-seq analysis of GEO dataset GSE306117. It asks which genes and biological programs differ between breast Tumor tissue and matched Normal breast tissue from the same patients. The maintained workflow parses GEO metadata, merges 74 HTSeq count files, applies sample-level quality-control and pairing rules, and selects 21 patients with one Tumor and one Normal sample each. Differential expression is estimated with DESeq2 using the paired model `~ patient_id + condition_main`. Of 60,617 gene rows, 6,315 have Benjamini-Hochberg adjusted p-value below 0.05; 1,636 also have absolute shrunken log2 fold change at least 1. Hallmark GSEA identifies 35 significant gene sets. The former combined GO result remains supplementary because it mixes directions; the main F07 presentation now uses separate Tumor-higher and Normal-higher ORAs. These findings are statistical associations within one bulk-tissue cohort, not causal, clinical, biomarker, or prediction evidence.
 
 ## Problem and motivation
 
@@ -102,9 +102,9 @@ Mapping is incomplete: 52,418 Ensembl rows have nominal p-values, 32,720 Ensembl
 
 ### GO Biological Process ORA
 
-The selected list contains 1,636 genes with `padj < 0.05` and `|shrunken log2FC| >= 1`. The input universe contains 30,244 genes with non-NA adjusted p-value. GO annotation reduces these to 1,036 selected genes and 15,233 universe genes in the actual enrichment ratios.
+The combined selected list contains 1,636 genes with `padj < 0.05` and `|shrunken log2FC| >= 1`. Because it mixes 506 Tumor-higher and 1,130 Normal-higher genes, it is non-directional and supplementary only. The corrected main analyses use those two directional lists separately. All three ORAs use the same 30,244-gene input universe and 15,233-gene GO-annotated denominator.
 
-The current raw table writes all 5,102 tested GO terms; 729 have adjusted p-value below 0.05. The earlier 729-row table contained only cutoff-passing terms, which made “729 of 729 significant” appear more surprising than it was. For presentation only, `clusterProfiler::simplify` uses Wang semantic similarity at cutoff 0.7 and retains the best adjusted-p-value representative from redundant groups. Thirty representative terms are saved; no valid raw term is deleted.
+The complete combined table has 5,102 tested terms and 729 at adjusted p-value below 0.05. Tumor-higher ORA maps 324/506 genes and has 259 significant terms among 3,095 tested; Normal-higher ORA maps 712/1,130 and has 694 among 4,686. For presentation only, `clusterProfiler::simplify` uses Wang semantic similarity at cutoff 0.7. F07 applies a documented maximum of two terms per keyword family after simplification. No full or representative table is deleted.
 
 ## Verified results
 
@@ -122,9 +122,10 @@ The current raw table writes all 5,102 tested GO terms; 729 have adjusted p-valu
 | Normal-higher under primary rule | 1,130 |
 | Hallmark sets tested / significant | 50 / 35 |
 | GO BP terms tested / significant | 5,102 / 729 |
-| Representative GO table | 30 terms |
+| Tumor-higher GO tested / significant | 3,095 / 259 |
+| Normal-higher GO tested / significant | 4,686 / 694 |
 
-The top Hallmark results include Tumor-side E2F targets, MYC targets, G2M checkpoint and mTORC1 signaling. Representative GO terms emphasize mitotic nuclear division and chromosome segregation. These are coherent with a cell-cycle/proliferation-associated Tumor-side pattern, but they do not identify a causal driver.
+The top positive-NES Hallmark results include E2F targets, MYC targets, G2M checkpoint and mTORC1 signaling. Directional GO shows division/chromosome themes among Tumor-higher genes and circulation, muscle, extracellular-matrix and other tissue-context themes among Normal-higher genes. These patterns do not identify causal drivers.
 
 ## Interpretation of the seven figures
 
@@ -193,7 +194,7 @@ Unshrunk versus shrunken effects have Spearman correlation 0.8127 across 52,418 
 
 ## Justified conclusions
 
-Within the 21-patient paired GSE306117 cohort, Tumor and Normal breast tissues show widespread statistically supported gene-expression differences. Rank-based Hallmark and selected-gene GO analyses support cell-cycle/mitotic-associated Tumor-side hypotheses. These conclusions are cohort-specific associations and require independent and experimental validation.
+Within the 21-patient paired GSE306117 cohort, Tumor and Normal breast tissues show widespread statistically supported gene-expression differences. Rank-based Hallmark and directional selected-gene GO analyses associate cell-cycle/division programs with the Tumor-higher side while preserving distinct Normal-higher tissue-context results. These conclusions are cohort-specific associations requiring independent and experimental validation.
 
 ## Future validation
 

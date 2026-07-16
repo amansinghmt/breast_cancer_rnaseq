@@ -152,9 +152,10 @@ if (nrow(top_de) < 40) {
 }
 
 top_de <- top_de %>%
-  arrange(padj, desc(abs(log2FC))) %>%
-  slice_head(n = 40) %>%
-  mutate(gene_id_clean = clean_gene_id(gene_id))
+  mutate(
+    direction = ifelse(log2FC > 0, "Tumor-higher", "Normal-higher"),
+    gene_id_clean = clean_gene_id(gene_id)
+  )
 
 if (nrow(top_de) == 0) {
   stop("No genes available from DE results after filtering non-NA padj.")
@@ -289,9 +290,16 @@ rownames(z_mat) <- rownames(expr_top)
 colnames(z_mat) <- colnames(expr_top)
 z_plot_mat <- pmax(pmin(z_mat, 2.5), -2.5)
 
-row_hc <- hclust(dist(z_mat))
-row_order <- rownames(z_plot_mat)[row_hc$order]
+tumor_rows <- top_de %>% filter(direction == "Tumor-higher") %>% pull(gene_id_clean)
+normal_rows <- top_de %>% filter(direction == "Normal-higher") %>% pull(gene_id_clean)
+cluster_block <- function(ids) {
+  ids <- ids[ids %in% rownames(z_mat)]
+  if (length(ids) <= 1) return(ids)
+  ids[hclust(dist(z_mat[ids, , drop = FALSE]))$order]
+}
+row_order <- c(cluster_block(tumor_rows), cluster_block(normal_rows))
 z_plot_mat <- z_plot_mat[row_order, sample_order, drop = FALSE]
+block_break <- length(cluster_block(tumor_rows)) + 0.5
 
 label_tbl <- top_de %>%
   distinct(gene_id_clean, .keep_all = TRUE) %>%
@@ -349,6 +357,7 @@ anno_plot <- ggplot(anno_df, aes(x = sample_id, y = y, fill = condition_main)) +
 
 heat_plot <- ggplot(heat_df, aes(x = sample_id, y = gene_id_clean, fill = z_plot)) +
   geom_tile() +
+  geom_hline(yintercept = block_break, color = "#202020", linewidth = 0.65) +
   {
     if (length(pair_breaks) > 0) geom_vline(xintercept = pair_breaks, color = "#FFFFFF", linewidth = 0.35)
   } +
@@ -364,9 +373,10 @@ heat_plot <- ggplot(heat_df, aes(x = sample_id, y = gene_id_clean, fill = z_plot
   scale_x_discrete(drop = FALSE, labels = sample_label_map, expand = c(0, 0)) +
   scale_y_discrete(labels = function(x) label_map[x], expand = c(0, 0)) +
   labs(
-    title = "Top 40 DE genes: paired heatmap (row z-scored)",
+    title = "Balanced directional DE genes across matched samples",
     subtitle = paste0(
-      "Balanced Tumor-/Normal-higher genes passing padj<0.05 and |shrunken log2FC|>=1; ",
+      "Upper block: Tumor-higher; lower block: Normal-higher; 20 genes per direction; ",
+      "padj<0.05 and |shrunken log2FC|>=1; ",
       basename(expr_source_used)
     ),
     x = NULL,
@@ -450,24 +460,9 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
       plot.margin = margin(8, 8, 8, 0)
     )
 
-  left_block <- anno_plot / heat_plot + patchwork::plot_layout(heights = c(0.12, 1))
-  final_plot <- (left_block | help_panel) + patchwork::plot_layout(widths = c(5.2, 1.3))
+  final_plot <- anno_plot / heat_plot + patchwork::plot_layout(heights = c(0.12, 1))
 } else {
-  final_plot <- heat_plot +
-    annotate(
-      "label",
-      x = sample_order[[length(sample_order)]],
-      y = row_order[[1]],
-      label = paste("How to read this figure\n", help_text),
-      hjust = 1,
-      vjust = 1,
-      size = 2.8,
-      lineheight = 1.1,
-      label.size = 0.2,
-      fill = "white",
-      color = "#222222"
-    ) +
-    theme(plot.margin = margin(10, 90, 10, 10))
+  final_plot <- heat_plot
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)

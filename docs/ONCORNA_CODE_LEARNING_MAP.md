@@ -74,7 +74,7 @@ Study these files in order. The goal is to explain the data contract and scienti
 
 - Purpose: run full-rank Hallmark GSEA and selected-list GO BP ORA.
 - Input: canonical DE table.
-- Outputs: Hallmark table, complete GO table, representative GO table and mapping diagnostics.
+- Outputs: Hallmark table, complete combined and directional GO tables, representative GO tables and mapping diagnostics.
 - Important blocks: `universe_genes`, `sig_genes`, Wald-stat ranking, symbol duplicate handling, `fgseaMultilevel`, `enrichGO`, `simplify`.
 - Concepts: rank statistics, null enrichment, NES, over-representation, hypergeometric reasoning, gene universe, annotation loss, semantic similarity.
 - You should explain: why GSEA uses the full ranking, ORA uses 1,636 selected genes, and the GO denominator becomes 1,036/15,233 after annotation.

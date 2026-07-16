@@ -429,11 +429,26 @@ go_path = os.path.join(root, "results_v2", "enrichment", "go_bp_ora_paired_v2.ts
 go_representative_path = os.path.join(
     root, "results_v2", "enrichment", "go_bp_ora_representative_v2.tsv"
 )
+go_tumor_path = os.path.join(
+    root, "results_v2", "enrichment", "go_bp_ora_tumor_higher_paired_v2.tsv"
+)
+go_normal_path = os.path.join(
+    root, "results_v2", "enrichment", "go_bp_ora_normal_higher_paired_v2.tsv"
+)
+go_tumor_rep_path = os.path.join(
+    root, "results_v2", "enrichment", "go_bp_ora_tumor_higher_representative_v2.tsv"
+)
+go_normal_rep_path = os.path.join(
+    root, "results_v2", "enrichment", "go_bp_ora_normal_higher_representative_v2.tsv"
+)
 diagnostics_path = os.path.join(
     root, "results_v2", "enrichment", "enrichment_diagnostics_v2.tsv"
 )
 
-for path in (hallmark_path, go_path, go_representative_path, diagnostics_path):
+for path in (
+    hallmark_path, go_path, go_representative_path, go_tumor_path,
+    go_normal_path, go_tumor_rep_path, go_normal_rep_path, diagnostics_path
+):
     if not os.path.exists(path) or os.path.getsize(path) == 0:
         raise SystemExit(f"Missing or empty enrichment output: {path}")
 
@@ -571,6 +586,10 @@ key_outputs = [
     ("enrichment_hallmark", "results_v2/enrichment/hallmark_gsea_paired_v2.tsv"),
     ("enrichment_go_bp", "results_v2/enrichment/go_bp_ora_paired_v2.tsv"),
     ("enrichment_go_bp_representative", "results_v2/enrichment/go_bp_ora_representative_v2.tsv"),
+    ("enrichment_go_bp_tumor_higher", "results_v2/enrichment/go_bp_ora_tumor_higher_paired_v2.tsv"),
+    ("enrichment_go_bp_normal_higher", "results_v2/enrichment/go_bp_ora_normal_higher_paired_v2.tsv"),
+    ("enrichment_go_bp_tumor_higher_representative", "results_v2/enrichment/go_bp_ora_tumor_higher_representative_v2.tsv"),
+    ("enrichment_go_bp_normal_higher_representative", "results_v2/enrichment/go_bp_ora_normal_higher_representative_v2.tsv"),
     ("enrichment_diagnostics", "results_v2/enrichment/enrichment_diagnostics_v2.tsv"),
     ("enrichment_session_info", "results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt"),
     ("robustness_metrics", "results_v2/robustness/analysis_metrics_v2.tsv"),
@@ -580,6 +599,7 @@ key_outputs = [
     ("robustness_pca", "results_v2/robustness/pca_outlier_summary_v2.tsv"),
     ("robustness_top_de", "results_v2/robustness/top_de_genes_v2.tsv"),
     ("robustness_cohort", "results_v2/robustness/cohort_inclusion_summary_v2.tsv"),
+    ("pca_sample_diagnostics", "results_v2/qc/pca_sample_diagnostics_v2.tsv"),
     ("robustness_session_info", "results_v2/robustness/sessionInfo_robustness_v2.txt"),
     ("session_info", "results_v2/sessionInfo.txt"),
     ("fig_manifest", "results_v2/fig_manifest.tsv"),

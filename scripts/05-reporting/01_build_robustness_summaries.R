@@ -35,6 +35,9 @@ manifest_path <- "results_v2/metadata/paired_manifest.tsv"
 hallmark_path <- "results_v2/enrichment/hallmark_gsea_paired_v2.tsv"
 go_path <- "results_v2/enrichment/go_bp_ora_paired_v2.tsv"
 go_representative_path <- "results_v2/enrichment/go_bp_ora_representative_v2.tsv"
+go_tumor_path <- "results_v2/enrichment/go_bp_ora_tumor_higher_paired_v2.tsv"
+go_normal_path <- "results_v2/enrichment/go_bp_ora_normal_higher_paired_v2.tsv"
+enrichment_diagnostics_path <- "results_v2/enrichment/enrichment_diagnostics_v2.tsv"
 out_dir <- "results_v2/robustness"
 
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
@@ -47,6 +50,9 @@ manifest <- readr::read_tsv(manifest_path, show_col_types = FALSE)
 hallmark <- readr::read_tsv(hallmark_path, show_col_types = FALSE)
 go <- readr::read_tsv(go_path, show_col_types = FALSE)
 go_representative <- readr::read_tsv(go_representative_path, show_col_types = FALSE)
+go_tumor <- readr::read_tsv(go_tumor_path, show_col_types = FALSE)
+go_normal <- readr::read_tsv(go_normal_path, show_col_types = FALSE)
+enrichment_diagnostics <- readr::read_tsv(enrichment_diagnostics_path, show_col_types = FALSE)
 
 required_de <- c(
   "gene_id", "baseMean", "log2FoldChange", "pvalue", "padj",
@@ -65,17 +71,17 @@ threshold_grid <- tidyr::crossing(
 threshold_summary <- threshold_grid %>%
   rowwise() %>%
   mutate(
-    upregulated = sum(
+    tumor_higher = sum(
       !is.na(de$padj) & de$padj < padj_cutoff &
         !is.na(de$log2FoldChange_shrunk) &
         de$log2FoldChange_shrunk >= abs_shrunken_log2fc_cutoff
     ),
-    downregulated = sum(
+    normal_higher = sum(
       !is.na(de$padj) & de$padj < padj_cutoff &
         !is.na(de$log2FoldChange_shrunk) &
         de$log2FoldChange_shrunk <= -abs_shrunken_log2fc_cutoff
     ),
-    total = upregulated + downregulated
+    total = tumor_higher + normal_higher
   ) %>%
   ungroup()
 
@@ -333,6 +339,8 @@ metrics <- data.frame(
     "genes_padj_lt_0.05_abs_shrunk_lfc_ge_1", "hallmark_sets_tested",
     "hallmark_sets_padj_lt_0.05", "go_terms_tested",
     "go_terms_padj_lt_0.05", "go_representative_terms",
+    "go_tumor_higher_terms_tested", "go_tumor_higher_terms_padj_lt_0.05",
+    "go_normal_higher_terms_tested", "go_normal_higher_terms_padj_lt_0.05",
     "pca_explained_pc1_percent", "pca_explained_pc2_percent",
     "pca_exploratory_outliers"
   ),
@@ -350,6 +358,10 @@ metrics <- data.frame(
     nrow(go),
     sum(go$p.adjust < 0.05, na.rm = TRUE),
     nrow(go_representative),
+    nrow(go_tumor),
+    sum(go_tumor$p.adjust < 0.05, na.rm = TRUE),
+    nrow(go_normal),
+    sum(go_normal$p.adjust < 0.05, na.rm = TRUE),
     (pca$sdev[1]^2 / sum(pca$sdev^2)) * 100,
     (pca$sdev[2]^2 / sum(pca$sdev^2)) * 100,
     sum(scores$exploratory_outlier_flag)

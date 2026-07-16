@@ -51,14 +51,18 @@ if ("log2FoldChange_shrunk" %in% colnames(de) && !all(is.na(de$log2FoldChange_sh
 }
 
 ma_df <- de %>%
-  mutate(log2FC = .data[[lfc_col]]) %>%
+  mutate(
+    log2FC = .data[[lfc_col]],
+    gene_id_clean = sub("\\..*$", "", as.character(gene_id))
+  ) %>%
   filter(!is.na(baseMean), !is.na(log2FC)) %>%
   mutate(
     x = log10(baseMean + 1),
     log2FC_plot = pmax(pmin(log2FC, 8), -8),
     de_status = case_when(
-      !is.na(padj) & padj < 0.05 & log2FC >= 1 ~ "Up in tumor",
-      !is.na(padj) & padj < 0.05 & log2FC <= -1 ~ "Up in normal",
+      !is.na(padj) & padj < 0.05 & log2FC >= 1 ~ "Tumor-higher",
+      !is.na(padj) & padj < 0.05 & log2FC <= -1 ~ "Normal-higher",
+      !is.na(padj) & padj < 0.05 ~ "FDR only",
       TRUE ~ "Not significant"
     )
   )
@@ -71,12 +75,42 @@ sig_count <- ma_df %>%
   filter(!is.na(padj), padj < 0.05, abs(log2FC) >= 1) %>%
   nrow()
 
-up_count <- sum(ma_df$de_status == "Up in tumor")
-down_count <- sum(ma_df$de_status == "Up in normal")
+up_count <- sum(ma_df$de_status == "Tumor-higher")
+down_count <- sum(ma_df$de_status == "Normal-higher")
+fdr_only_count <- sum(ma_df$de_status == "FDR only")
+
+if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
+    requireNamespace("AnnotationDbi", quietly = TRUE)) {
+  symbol_map <- AnnotationDbi::select(
+    org.Hs.eg.db::org.Hs.eg.db,
+    keys = unique(ma_df$gene_id_clean),
+    keytype = "ENSEMBL",
+    columns = "SYMBOL"
+  ) %>%
+    filter(!is.na(SYMBOL), nzchar(SYMBOL)) %>%
+    arrange(ENSEMBL, SYMBOL) %>%
+    distinct(ENSEMBL, .keep_all = TRUE)
+  ma_df <- ma_df %>% left_join(symbol_map, by = c("gene_id_clean" = "ENSEMBL"))
+} else {
+  ma_df <- ma_df %>% mutate(SYMBOL = NA_character_)
+}
+
+label_df <- bind_rows(
+  ma_df %>%
+    filter(de_status == "Tumor-higher", baseMean >= 10) %>%
+    arrange(padj, desc(abs(log2FC)), gene_id) %>%
+    slice_head(n = 3),
+  ma_df %>%
+    filter(de_status == "Normal-higher", baseMean >= 10) %>%
+    arrange(padj, desc(abs(log2FC)), gene_id) %>%
+    slice_head(n = 3)
+) %>%
+  mutate(label = ifelse(!is.na(SYMBOL), SYMBOL, gene_id_clean))
 
 subtitle_text <- paste0(
   "Primary reporting rule: padj<0.05 and |shrunken log2FC|>=1; ",
-  "Tumor higher: ", up_count, "; Normal higher: ", down_count
+  "Tumor-higher: ", up_count, "; Normal-higher: ", down_count,
+  "; FDR-only: ", fdr_only_count
 )
 
 help_items <- c(
@@ -102,8 +136,9 @@ help_text <- paste(
 
 palette_status <- c(
   "Not significant" = "#BDBDBD",
-  "Up in normal" = "#1B9E77",
-  "Up in tumor" = "#D95F02"
+  "FDR only" = "#7F8C8D",
+  "Normal-higher" = "#1B9E77",
+  "Tumor-higher" = "#D95F02"
 )
 
 main_plot <- ggplot(ma_df, aes(x = x, y = log2FC_plot)) +
@@ -122,11 +157,11 @@ main_plot <- ggplot(ma_df, aes(x = x, y = log2FC_plot)) +
     size = 0.75
   ) +
   scale_color_manual(
-    values = palette_status[c("Up in normal", "Up in tumor")],
+    values = palette_status[c("FDR only", "Normal-higher", "Tumor-higher")],
     name = "DE status"
   ) +
   labs(
-    title = "MA plot: paired Tumor vs Normal",
+    title = "Mean abundance and shrunken Tumor-Normal effect",
     subtitle = subtitle_text,
     x = "Mean expression (baseMean; log10 scale)",
     y = "Shrunken log2 fold change (Tumor vs Normal)",
@@ -148,7 +183,21 @@ main_plot <- ggplot(ma_df, aes(x = x, y = log2FC_plot)) +
   ) +
   coord_cartesian(clip = "off")
 
-if (requireNamespace("patchwork", quietly = TRUE)) {
+if (requireNamespace("ggrepel", quietly = TRUE) && nrow(label_df) > 0) {
+  main_plot <- main_plot +
+    ggrepel::geom_text_repel(
+      data = label_df,
+      aes(label = label),
+      size = 2.5,
+      box.padding = 0.25,
+      point.padding = 0.1,
+      min.segment.length = 0,
+      max.overlaps = 20,
+      show.legend = FALSE
+    )
+}
+
+if (FALSE && requireNamespace("patchwork", quietly = TRUE)) {
   help_panel <- ggplot() +
     annotate(
       "text",
@@ -176,27 +225,7 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 
   final_plot <- main_plot + help_panel + patchwork::plot_layout(widths = c(5.0, 1.2))
 } else {
-  xr <- range(ma_df$x, na.rm = TRUE)
-  yr <- range(ma_df$log2FC_plot, na.rm = TRUE)
-  x_annot <- xr[2] + 0.28 * (xr[2] - xr[1])
-  y_annot <- yr[2]
-
-  final_plot <- main_plot +
-    scale_x_continuous(expand = expansion(mult = c(0.03, 0.42))) +
-    annotate(
-      "label",
-      x = x_annot,
-      y = y_annot,
-      label = paste("How to read this figure\n", help_text),
-      hjust = 0,
-      vjust = 1,
-      size = 3.0,
-      lineheight = 1.1,
-      label.size = 0.2,
-      fill = "white",
-      color = "#222222"
-    ) +
-    theme(plot.margin = margin(10, 140, 10, 10))
+  final_plot <- main_plot
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)

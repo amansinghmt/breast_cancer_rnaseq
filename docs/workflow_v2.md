@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository maintains a reproducible v2 RNA-seq workflow for GEO dataset GSE306117, focused on matched Tumor vs Normal breast samples. The analysis pipeline builds a paired cohort manifest, runs paired DESeq2 differential expression, performs Hallmark GSEA and GO BP ORA, generates final publication-style figures, and writes strict output manifests.
+This repository maintains a reproducible v2 RNA-seq workflow for GEO dataset GSE306117, focused on matched Tumor vs Normal breast samples. The analysis pipeline builds a paired cohort manifest, runs paired DESeq2 differential expression, performs Hallmark GSEA plus combined-supplementary and directional GO BP ORA, generates final publication-style figures, and writes strict output manifests.
 
 The maintained entrypoint is:
 
@@ -109,7 +109,7 @@ Perform downstream biological interpretation from paired DE results.
 **Validation performed by `run_v2.sh`**
 
 - Both enrichment tables exist and are non-empty files
-- Combined enrichment row count is non-zero
+- Hallmark, combined GO, Tumor-higher GO and Normal-higher GO outputs are non-empty
 
 ### Step D — Figure Rendering and Final Naming Contract
 

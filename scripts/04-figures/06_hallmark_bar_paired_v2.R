@@ -45,7 +45,7 @@ assert_columns <- function(df, cols, label) {
 clean_pathway <- function(x) {
   x <- gsub("^HALLMARK_", "", as.character(x))
   x <- gsub("_", " ", x)
-  tools::toTitleCase(tolower(x))
+  x
 }
 
 gsea <- readr::read_tsv(gsea_path, show_col_types = FALSE)
@@ -95,10 +95,9 @@ if (nrow(plot_tbl) == 0) {
 
 plot_tbl <- plot_tbl %>%
   mutate(
-    direction = ifelse(NES > 0, "Tumor-enriched", "Normal-enriched"),
+    direction = ifelse(NES > 0, "Toward Tumor-higher", "Toward Normal-higher"),
     pathway_clean = clean_pathway(pathway),
-    neg_log10_fdr = -log10(pmax(padj, .Machine$double.xmin)),
-    evidence_plot = pmin(neg_log10_fdr, 30)
+    fdr_label = paste0("FDR ", scales::scientific(padj, digits = 2))
   ) %>%
   arrange(NES) %>%
   mutate(pathway_clean = factor(pathway_clean, levels = pathway_clean))
@@ -110,14 +109,14 @@ subtitle_suffix <- if (fallback_mode) {
 }
 
 subtitle_text <- paste(
-  "NES (enrichment strength); padj (FDR); Tumor NES>0, Normal NES<0;\n",
+  "NES (enrichment strength); padj (FDR); positive = Tumor-higher side, negative = Normal-higher side;\n",
   subtitle_suffix
 )
 
 help_items <- c(
   "Bar = one Hallmark pathway",
   "NES = enrichment strength (pathway shift)",
-  "NES>0 = Tumor-enriched; NES<0 = Normal-enriched",
+  "NES>0 = toward Tumor-higher; NES<0 = toward Normal-higher",
   "padj = FDR (false discovery rate)",
   "Bigger |NES| = stronger program-level difference"
 )
@@ -139,19 +138,18 @@ help_text_raw <- paste(
 help_text <- help_text_raw
 
 dir_colors <- c(
-  "Tumor-enriched" = "#D95F02",
-  "Normal-enriched" = "#1B9E77"
+  "Toward Tumor-higher" = "#D95F02",
+  "Toward Normal-higher" = "#1B9E77"
 )
 
 main_plot <- ggplot(plot_tbl, aes(x = pathway_clean, y = NES, fill = direction)) +
   geom_col(width = 0.75) +
-  geom_point(aes(size = evidence_plot), shape = 21, color = "white", stroke = 0.4) +
+  geom_text(aes(label = fdr_label), hjust = ifelse(plot_tbl$NES > 0, -0.05, 1.05), size = 2.5) +
   geom_hline(yintercept = 0, color = "#4A4A4A", linewidth = 0.5) +
   coord_flip(clip = "off") +
   scale_fill_manual(values = dir_colors, name = "Direction") +
-  scale_size_continuous(name = "-log10(FDR)\n(capped at 30)", range = c(2, 6)) +
   labs(
-    title = "Hallmark GSEA summary (paired cohort)",
+    title = "Hallmark pathways enriched along the paired DE ranking",
     subtitle = subtitle_text,
     x = NULL,
     y = "Normalized enrichment score (NES)",
@@ -173,7 +171,7 @@ main_plot <- ggplot(plot_tbl, aes(x = pathway_clean, y = NES, fill = direction))
     plot.margin = margin(10, 8, 10, 10)
   )
 
-if (requireNamespace("patchwork", quietly = TRUE)) {
+if (FALSE && requireNamespace("patchwork", quietly = TRUE)) {
   help_panel <- ggplot() +
     annotate(
       "text",
@@ -202,25 +200,7 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
   final_plot <- main_plot + help_panel + patchwork::plot_layout(widths = c(5.0, 1.5))
   final_plot <- final_plot & theme(plot.margin = margin(10, 20, 10, 10))
 } else {
-  # Fallback: place panel text inside the plotting canvas.
-  y_range <- range(plot_tbl$NES, na.rm = TRUE)
-  y_annot <- max(y_range) * 0.98
-
-  final_plot <- main_plot +
-    annotate(
-      "label",
-      x = 1,
-      y = y_annot,
-      label = paste("How to read this figure\n", help_text),
-      hjust = 0,
-      vjust = 1,
-      size = 3.0,
-      lineheight = 1.1,
-      label.size = 0.2,
-      fill = "white",
-      color = "#222222"
-    ) +
-    theme(plot.margin = margin(10, 120, 10, 10))
+  final_plot <- main_plot + scale_y_continuous(expand = expansion(mult = c(0.15, 0.15)))
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)

@@ -17,7 +17,7 @@ FIGURE_CONTENT = {
     },
     "F03": {
         "title": "MA plot of paired differential expression",
-        "caption": "Shrunken Tumor-versus-Normal log2 fold change against mean normalized abundance. Color requires padj<0.05 and absolute shrunken log2 fold change at least 1.",
+        "caption": "Shrunken Tumor-versus-Normal log2 fold change against mean normalized abundance. Grey distinguishes FDR-only genes from genes also passing the absolute effect-size threshold.",
         "shows": "Statistically supported differences occur in both directions over a range of expression levels.",
         "does_not_prove": "A statistically supported expression difference is not evidence of causation, clinical value, or biomarker validity.",
         "source": "results_v2/deseq2/deseq2_paired_v2_results.tsv",
@@ -42,17 +42,17 @@ FIGURE_CONTENT = {
     "F06": {
         "title": "Hallmark gene-set enrichment",
         "caption": "Balanced significant Hallmark pathways. Positive NES is enrichment toward Tumor-higher genes; negative NES is enrichment toward Normal-higher genes.",
-        "shows": "Tumor-enriched rankings include E2F, MYC, G2M-checkpoint and mTORC1 programs. Negative NES pathways capture patterns toward the Normal side of the ranking.",
+        "shows": "E2F, MYC, G2M-checkpoint and mTORC1 programs are enriched toward the Tumor-higher side. Negative NES pathways are enriched toward the Normal-higher side.",
         "does_not_prove": "GSEA identifies coordinated rank patterns; it does not show pathway activation mechanism or clinical actionability.",
         "source": "results_v2/enrichment/hallmark_gsea_paired_v2.tsv",
         "script": "scripts/04-figures/06_hallmark_bar_paired_v2.R",
     },
     "F07": {
-        "title": "Representative GO Biological Processes",
-        "caption": "Thirty significant GO terms were retained after Wang semantic-similarity reduction at cutoff 0.7; the plot shows the top 15 and the complete 5,102-term test table remains available.",
-        "shows": "Representative terms emphasize mitosis, chromosome segregation, and related cell-cycle processes.",
+        "title": "Directional GO Biological Processes",
+        "caption": "Separate Tumor-higher and Normal-higher ORAs use the same background. The plot shows ten significant representatives per direction after Wang reduction and a documented two-per-keyword-family display cap.",
+        "shows": "Tumor-higher genes emphasize division/chromosome themes; Normal-higher genes include circulation, muscle, extracellular-matrix and metabolic/tissue-context themes.",
         "does_not_prove": "GO terms are overlapping annotations. Enrichment does not demonstrate a causal mechanism or independent validation.",
-        "source": "full and representative GO BP ORA tables",
+        "source": "directional full and representative GO BP ORA tables",
         "script": "scripts/04-figures/07_go_bp_dotplot_paired_v2.R",
     },
 }
@@ -63,7 +63,7 @@ PIPELINE_STAGES = [
     ("3. QC and cohort", "Calculate count totals, apply the 1e6 minimum, and require one passing Tumor and Normal per patient.", "results_v2/metadata/paired_manifest.tsv", "Low depth, unmatched patients or duplicate tissues."),
     ("4. Paired DESeq2", "Fit ~ patient_id + condition_main to raw counts and test Tumor versus Normal.", "results_v2/deseq2/deseq2_paired_v2_results.tsv", "Wrong reference, sample order, outliers or invalid counts."),
     ("5. Hallmark GSEA", "Rank mapped gene symbols by the DESeq2 Wald statistic and run fgseaMultilevel.", "results_v2/enrichment/hallmark_gsea_paired_v2.tsv", "Identifier loss, duplicate symbols or unstable ranking."),
-    ("6. GO BP ORA", "Test effect-filtered DE genes against the tested-gene universe and reduce redundancy only for presentation.", "results_v2/enrichment/go_bp_ora_paired_v2.tsv", "Wrong background, annotation loss or redundant terms."),
+    ("6. GO BP ORA", "Run combined supplementary, Tumor-higher and Normal-higher tests against one tested-gene universe; reduce redundancy only for presentation.", "results_v2/enrichment/go_bp_ora_*_paired_v2.tsv", "Wrong direction, background, annotation loss or redundant terms."),
     ("7. Figures and validation", "Render F01-F07, create PDFs, checksums and strict output manifests.", "figures_v2/final; results_v2/output_manifest.tsv", "Missing, empty or non-canonical artifacts."),
 ]
 
@@ -82,7 +82,7 @@ METHODS = {
     "Z-score": "For each heatmap gene, subtract its sample mean and divide by its sample standard deviation. Color then shows relative, not absolute, expression.",
     "GSEA": "GSEA asks whether members of a predefined gene set accumulate near one end of a ranked gene list.",
     "NES": "The normalized enrichment score adjusts the raw GSEA score for gene-set size. Its sign follows the ranked contrast direction.",
-    "GO ORA": "Over-representation analysis asks whether selected DE genes occur in a GO term more often than expected relative to the tested background.",
+    "GO ORA": "Over-representation analysis asks whether selected DE genes occur in a GO term more often than expected relative to the tested background. Direction must come from separate Tumor-higher and Normal-higher input lists.",
 }
 
 VIVA_QA = [
@@ -102,7 +102,7 @@ VIVA_QA = [
     ("What does PCA show?", "Major variation patterns and possible outliers; it does not test differential expression."),
     ("What does a volcano plot show?", "Effect direction/magnitude on x and adjusted statistical evidence on y."),
     ("What is GSEA?", "A rank-based test for coordinated shifts in predefined gene sets."),
-    ("How is GO ORA different?", "ORA begins with a selected gene list; GSEA uses the full ranked list."),
+    ("How is GO ORA different?", "ORA begins with a selected gene list; GSEA uses the full ranked list. Combining both DE directions makes ORA non-directional."),
     ("What were the main findings?", "There are widespread paired expression differences and enrichment of cell-cycle/proliferation-related programs toward Tumor, plus many Normal-side/tissue-context patterns."),
     ("How reliable are the findings?", "They are reproducible within this cohort and robust to a predefined low-count sensitivity analysis, but lack external or laboratory validation."),
     ("What are the limitations?", "Bulk mixed-cell tissue, one public cohort, annotation loss, threshold dependence and no independent validation."),
