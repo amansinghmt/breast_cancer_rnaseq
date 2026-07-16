@@ -25,3 +25,4 @@ data/metadata/sample_manifest.tsv
 # Local runtime artifacts
 .venv/
 *.log
+.Rproj.user/
