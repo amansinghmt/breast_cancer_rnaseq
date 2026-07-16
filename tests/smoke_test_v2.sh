@@ -68,12 +68,27 @@ bash scripts/run_v2.sh || die "Pipeline execution failed: bash scripts/run_v2.sh
 step 2 "Checking canonical DE outputs"
 require_nonempty_file results_v2/deseq2/deseq2_paired_v2_results.tsv
 require_nonempty_file results_v2/deseq2/deseq2_paired_v2_samples_used.tsv
+require_nonempty_file results_v2/deseq2/deseq2_paired_v2_vst.tsv
+require_nonempty_file results_v2/deseq2/deseq2_paired_v2_diagnostics.tsv
+require_nonempty_file results_v2/deseq2/deseq2_paired_v2_size_factors.tsv
 require_nonempty_file results_v2/deseq2/sessionInfo_paired_v2.txt
 
 step 3 "Checking enrichment outputs"
 require_nonempty_file results_v2/enrichment/hallmark_gsea_paired_v2.tsv
 require_nonempty_file results_v2/enrichment/go_bp_ora_paired_v2.tsv
+require_nonempty_file results_v2/enrichment/go_bp_ora_representative_v2.tsv
+require_nonempty_file results_v2/enrichment/enrichment_diagnostics_v2.tsv
 require_nonempty_file results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt
+
+for robustness_file in \
+  analysis_metrics_v2.tsv \
+  de_threshold_sensitivity_v2.tsv \
+  low_count_prefilter_sensitivity_v2.tsv \
+  lfc_agreement_v2.tsv \
+  pca_outlier_summary_v2.tsv \
+  top_de_genes_v2.tsv; do
+  require_nonempty_file "results_v2/robustness/${robustness_file}"
+done
 
 step 4 "Checking metadata/session/manifests"
 require_nonempty_file results_v2/metadata/paired_manifest.tsv
@@ -83,6 +98,9 @@ require_nonempty_file results_v2/sessionInfo.txt
 
 step 5 "Checking final figure contract"
 require_exact_figure_set
+for vector_figure in figures_v2/vector/F0*.pdf; do
+  require_nonempty_file "$vector_figure"
+done
 
 step 6 "Checking run logs"
 latest_log="$(latest_run_log)"
@@ -90,7 +108,7 @@ require_nonempty_file "$latest_log"
 printf 'Latest run log: %s\n' "$latest_log"
 
 step 7 "Checking manifest consistency"
-for entry in de_results enrichment_hallmark enrichment_go_bp figure_F01 figure_F02 figure_F03 figure_F04 figure_F05 figure_F06 figure_F07; do
+for entry in de_results de_vst de_diagnostics enrichment_hallmark enrichment_go_bp enrichment_go_bp_representative robustness_metrics figure_F01 figure_F02 figure_F03 figure_F04 figure_F05 figure_F06 figure_F07 figure_F01_pdf figure_F07_pdf; do
   require_output_manifest_entry "$entry"
 done
 

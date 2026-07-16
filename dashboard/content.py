@@ -1,0 +1,127 @@
+FIGURE_CONTENT = {
+    "F01": {
+        "title": "Paired library-size quality control",
+        "caption": "Gene-level count totals for each included sample, connected within patient and shown against the predefined one-million-count QC minimum.",
+        "shows": "All 42 included samples are above the minimum. Several matched tissues differ substantially in count depth, which is why model-based normalization remains necessary.",
+        "does_not_prove": "Library size alone cannot prove sample integrity, remove batch effects, or establish biological comparability.",
+        "source": "results_v2/metadata/paired_manifest.tsv; results/qc/qc_summary.tsv",
+        "script": "scripts/04-figures/01_publication_figures_paired_v2.R",
+    },
+    "F02": {
+        "title": "Paired-sample PCA",
+        "caption": "Principal-component analysis of the 2,000 most variable genes after DESeq2 variance-stabilizing transformation, with matched tissues connected.",
+        "shows": "The first two components summarize major expression variation and show broad condition-associated structure with patient-level heterogeneity.",
+        "does_not_prove": "PCA is exploratory, not a hypothesis test. Separation may reflect condition, cell mixture, batch, or unmeasured covariates.",
+        "source": "results_v2/deseq2/deseq2_paired_v2_vst.tsv",
+        "script": "scripts/04-figures/02_pca_paired_v2.R",
+    },
+    "F03": {
+        "title": "MA plot of paired differential expression",
+        "caption": "Shrunken Tumor-versus-Normal log2 fold change against mean normalized abundance. Color requires padj<0.05 and absolute shrunken log2 fold change at least 1.",
+        "shows": "Statistically supported differences occur in both directions over a range of expression levels.",
+        "does_not_prove": "A statistically supported expression difference is not evidence of causation, clinical value, or biomarker validity.",
+        "source": "results_v2/deseq2/deseq2_paired_v2_results.tsv",
+        "script": "scripts/04-figures/03_ma_paired_v2.R",
+    },
+    "F04": {
+        "title": "Volcano plot of effect and evidence",
+        "caption": "Shrunken log2 fold change versus adjusted statistical evidence. Labels are selected symmetrically from both directions without prior biological preference.",
+        "shows": "The strict reporting rule identifies more Normal-higher than Tumor-higher genes in this cohort.",
+        "does_not_prove": "Genes at the visual extremes are candidates for interpretation, not validated drivers or diagnostic markers.",
+        "source": "results_v2/deseq2/deseq2_paired_v2_results.tsv",
+        "script": "scripts/04-figures/04_volcano_paired_v2.R",
+    },
+    "F05": {
+        "title": "Balanced top-gene heatmap",
+        "caption": "Up to 20 Tumor-higher and 20 Normal-higher genes passing the primary reporting rule, shown as row-wise z-scores from the VST matrix.",
+        "shows": "Selected genes display recurring condition-associated patterns, with substantial patient-level variation.",
+        "does_not_prove": "Row clustering is descriptive and does not define breast-cancer subtypes or patient-level classifiers.",
+        "source": "DE result table, VST matrix, and paired sample manifest",
+        "script": "scripts/04-figures/05_heatmap_paired_v2.R",
+    },
+    "F06": {
+        "title": "Hallmark gene-set enrichment",
+        "caption": "Balanced significant Hallmark pathways. Positive NES is enrichment toward Tumor-higher genes; negative NES is enrichment toward Normal-higher genes.",
+        "shows": "Tumor-enriched rankings include E2F, MYC, G2M-checkpoint and mTORC1 programs. Negative NES pathways capture patterns toward the Normal side of the ranking.",
+        "does_not_prove": "GSEA identifies coordinated rank patterns; it does not show pathway activation mechanism or clinical actionability.",
+        "source": "results_v2/enrichment/hallmark_gsea_paired_v2.tsv",
+        "script": "scripts/04-figures/06_hallmark_bar_paired_v2.R",
+    },
+    "F07": {
+        "title": "Representative GO Biological Processes",
+        "caption": "Thirty significant GO terms were retained after Wang semantic-similarity reduction at cutoff 0.7; the plot shows the top 15 and the complete 5,102-term test table remains available.",
+        "shows": "Representative terms emphasize mitosis, chromosome segregation, and related cell-cycle processes.",
+        "does_not_prove": "GO terms are overlapping annotations. Enrichment does not demonstrate a causal mechanism or independent validation.",
+        "source": "full and representative GO BP ORA tables",
+        "script": "scripts/04-figures/07_go_bp_dotplot_paired_v2.R",
+    },
+}
+
+PIPELINE_STAGES = [
+    ("1. GEO metadata", "Parse accession, titles, tissue labels, genotype and batch fields.", "data/metadata/metadata.tsv", "Incorrect labels or patient IDs."),
+    ("2. HTSeq counts", "Remove HTSeq technical rows and outer-join 74 sample files by gene ID.", "data/processed/counts.tsv", "Missing, duplicate, non-integer or negative counts."),
+    ("3. QC and cohort", "Calculate count totals, apply the 1e6 minimum, and require one passing Tumor and Normal per patient.", "results_v2/metadata/paired_manifest.tsv", "Low depth, unmatched patients or duplicate tissues."),
+    ("4. Paired DESeq2", "Fit ~ patient_id + condition_main to raw counts and test Tumor versus Normal.", "results_v2/deseq2/deseq2_paired_v2_results.tsv", "Wrong reference, sample order, outliers or invalid counts."),
+    ("5. Hallmark GSEA", "Rank mapped gene symbols by the DESeq2 Wald statistic and run fgseaMultilevel.", "results_v2/enrichment/hallmark_gsea_paired_v2.tsv", "Identifier loss, duplicate symbols or unstable ranking."),
+    ("6. GO BP ORA", "Test effect-filtered DE genes against the tested-gene universe and reduce redundancy only for presentation.", "results_v2/enrichment/go_bp_ora_paired_v2.tsv", "Wrong background, annotation loss or redundant terms."),
+    ("7. Figures and validation", "Render F01-F07, create PDFs, checksums and strict output manifests.", "figures_v2/final; results_v2/output_manifest.tsv", "Missing, empty or non-canonical artifacts."),
+]
+
+METHODS = {
+    "RNA-seq count data": "Each matrix cell is the number of reads/fragments assigned to a gene in one sample. Counts are discrete and their variability increases with their mean.",
+    "Sequencing depth": "Samples can have different total assigned counts. A deeper sample can show larger raw counts even when biology is unchanged.",
+    "Normalization": "DESeq2 estimates one size factor per sample so the model compares relative abundance rather than raw depth.",
+    "Negative-binomial model": "DESeq2 models counts with a distribution that allows variance to exceed the mean, a common property of biological count data.",
+    "Paired design": "The patient term absorbs stable between-person differences. The condition term then estimates the Tumor-versus-Normal difference within matched patients.",
+    "Wald test": "The estimated condition effect is divided by its standard error. A large absolute statistic is less compatible with a zero-effect null model.",
+    "Log2 fold change": "A value of +1 means approximately twice as high in Tumor; -1 means approximately twice as high in Normal.",
+    "P-value": "Under the model and a zero-effect null hypothesis, it measures how unusual an effect at least this extreme would be. It is not the probability that the null is true.",
+    "Benjamini-Hochberg FDR": "Genes are tested together. BH adjusted p-values control the expected false-discovery proportion among discoveries under its assumptions.",
+    "Shrinkage": "Noisy log2 fold changes are pulled toward zero, especially when information is weak. This stabilizes ranking and visualization.",
+    "PCA": "PCA compresses many gene measurements into orthogonal directions that capture the largest variance. It is exploratory.",
+    "Z-score": "For each heatmap gene, subtract its sample mean and divide by its sample standard deviation. Color then shows relative, not absolute, expression.",
+    "GSEA": "GSEA asks whether members of a predefined gene set accumulate near one end of a ranked gene list.",
+    "NES": "The normalized enrichment score adjusts the raw GSEA score for gene-set size. Its sign follows the ranked contrast direction.",
+    "GO ORA": "Over-representation analysis asks whether selected DE genes occur in a GO term more often than expected relative to the tested background.",
+}
+
+VIVA_QA = [
+    ("What is OncoRNA?", "A reproducible paired bulk RNA-seq analysis of breast Tumor and matched Normal tissues in GEO dataset GSE306117."),
+    ("Why this dataset?", "It provides public HTSeq counts and matched tissues that support a within-patient comparison."),
+    ("Why use paired samples?", "Each patient acts as their own baseline, reducing between-person variation that could obscure the condition effect."),
+    ("What is RNA-seq?", "A sequencing method used here to quantify gene-level RNA abundance as counts."),
+    ("What is a count matrix?", "Rows are genes, columns are samples, and cells contain assigned counts."),
+    ("Why DESeq2?", "It models overdispersed count data, estimates normalization and dispersion, and supports multifactor paired designs."),
+    ("Why not an ordinary t-test?", "A t-test does not naturally model discrete, mean-dependent, overdispersed counts or sequencing-depth normalization."),
+    ("What does the model mean?", "~ patient_id + condition_main controls patient baselines and estimates the remaining Tumor-versus-Normal effect."),
+    ("What is log2 fold change?", "+1 is about two-fold higher in Tumor; -1 is about two-fold higher in Normal."),
+    ("What is a p-value?", "A null-model tail probability, not the probability that a gene is truly differential."),
+    ("Why adjust p-values?", "Testing tens of thousands of genes creates many false positives unless multiplicity is controlled."),
+    ("What is FDR?", "The expected false-discovery proportion among reported discoveries under the procedure's assumptions."),
+    ("What is shrinkage?", "A regularization step that stabilizes noisy fold-change estimates by pulling weakly supported values toward zero."),
+    ("What does PCA show?", "Major variation patterns and possible outliers; it does not test differential expression."),
+    ("What does a volcano plot show?", "Effect direction/magnitude on x and adjusted statistical evidence on y."),
+    ("What is GSEA?", "A rank-based test for coordinated shifts in predefined gene sets."),
+    ("How is GO ORA different?", "ORA begins with a selected gene list; GSEA uses the full ranked list."),
+    ("What were the main findings?", "There are widespread paired expression differences and enrichment of cell-cycle/proliferation-related programs toward Tumor, plus many Normal-side/tissue-context patterns."),
+    ("How reliable are the findings?", "They are reproducible within this cohort and robust to a predefined low-count sensitivity analysis, but lack external or laboratory validation."),
+    ("What are the limitations?", "Bulk mixed-cell tissue, one public cohort, annotation loss, threshold dependence and no independent validation."),
+    ("What should be validated next?", "Replicate the model in an independent matched cohort, then validate prioritized genes or mechanisms experimentally."),
+    ("Which parts did AI assist with?", "AI assisted code construction, review, presentation and documentation. The owner remains responsible for verifying data, methods and claims."),
+    ("What must the owner control?", "The biological question, cohort rules, model formula, contrast, thresholds, result interpretation, limitations and reproducible execution."),
+]
+
+CAN_SUPPORT = [
+    "A reproducible paired differential-expression analysis of this public GSE306117 cohort.",
+    "Statistical association between tissue condition and gene expression after controlling patient baseline.",
+    "Pathway-level hypotheses supported by ranked enrichment and over-representation analyses.",
+    "A transparent foundation for external replication and experimental validation.",
+]
+
+CANNOT_SUPPORT = [
+    "Causation or a molecular mechanism.",
+    "Clinical diagnosis, prognosis or treatment recommendation.",
+    "Validated biomarkers or patient-level prediction.",
+    "Population-wide generalization from one cohort.",
+    "Laboratory confirmation or independent-cohort replication.",
+]

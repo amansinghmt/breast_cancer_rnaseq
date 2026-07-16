@@ -41,6 +41,11 @@ Contains v2 publication-style figure scripts used by `run_v2.sh`.
 
 - Canonical final figures: `figures_v2/final/F01.png` to `figures_v2/final/F07.png`
 
+### `05-reporting/`
+
+Builds predefined robustness and presentation summaries. These outputs do not replace the
+canonical paired DE result.
+
 ## Legacy Scripts
 
 Legacy scripts are retained for historical comparison/reference. They are not deleted, but

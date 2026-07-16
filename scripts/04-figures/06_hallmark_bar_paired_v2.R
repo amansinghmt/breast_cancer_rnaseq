@@ -23,8 +23,10 @@ suppressPackageStartupMessages({
 
 gsea_path <- "results_v2/enrichment/hallmark_gsea_paired_v2.tsv"
 figure_dir <- "figures_v2/final"
+vector_dir <- "figures_v2/vector"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F06_bio_hallmark_nes_paired_v2.png")
+output_pdf_path <- file.path(vector_dir, "F06_bio_hallmark_nes_paired_v2.pdf")
 fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
 
 assert_columns <- function(df, cols, label) {
@@ -94,7 +96,9 @@ if (nrow(plot_tbl) == 0) {
 plot_tbl <- plot_tbl %>%
   mutate(
     direction = ifelse(NES > 0, "Tumor-enriched", "Normal-enriched"),
-    pathway_clean = clean_pathway(pathway)
+    pathway_clean = clean_pathway(pathway),
+    neg_log10_fdr = -log10(pmax(padj, .Machine$double.xmin)),
+    evidence_plot = pmin(neg_log10_fdr, 30)
   ) %>%
   arrange(NES) %>%
   mutate(pathway_clean = factor(pathway_clean, levels = pathway_clean))
@@ -106,7 +110,7 @@ subtitle_suffix <- if (fallback_mode) {
 }
 
 subtitle_text <- paste(
-  "NES (enrichment strength); padj (FDR); Tumor NES>0, Normal NES<0;",
+  "NES (enrichment strength); padj (FDR); Tumor NES>0, Normal NES<0;\n",
   subtitle_suffix
 )
 
@@ -132,7 +136,7 @@ help_text_raw <- paste(
   ),
   collapse = "\n"
 )
-help_text <- paste(strwrap(help_text_raw, width = 28), collapse = "\n")
+help_text <- help_text_raw
 
 dir_colors <- c(
   "Tumor-enriched" = "#D95F02",
@@ -141,14 +145,20 @@ dir_colors <- c(
 
 main_plot <- ggplot(plot_tbl, aes(x = pathway_clean, y = NES, fill = direction)) +
   geom_col(width = 0.75) +
+  geom_point(aes(size = evidence_plot), shape = 21, color = "white", stroke = 0.4) +
   geom_hline(yintercept = 0, color = "#4A4A4A", linewidth = 0.5) +
   coord_flip(clip = "off") +
   scale_fill_manual(values = dir_colors, name = "Direction") +
+  scale_size_continuous(name = "-log10(FDR)\n(capped at 30)", range = c(2, 6)) +
   labs(
     title = "Hallmark GSEA summary (paired cohort)",
     subtitle = subtitle_text,
     x = NULL,
-    y = "NES"
+    y = "Normalized enrichment score (NES)",
+    caption = paste(
+      "Positive NES indicates enrichment toward Tumor-higher genes; negative NES indicates\n",
+      "enrichment toward Normal-higher genes. Enrichment supports hypotheses, not mechanism."
+    )
   ) +
   theme_minimal(base_size = 14) +
   theme(
@@ -159,6 +169,7 @@ main_plot <- ggplot(plot_tbl, aes(x = pathway_clean, y = NES, fill = direction))
     legend.position = "top",
     legend.title = element_text(size = 11),
     legend.text = element_text(size = 10),
+    plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 8)),
     plot.margin = margin(10, 8, 10, 10)
   )
 
@@ -213,8 +224,10 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(vector_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
 ggsave(output_path, plot = final_plot, width = 11, height = 6.5, dpi = 320)
+ggsave(output_pdf_path, plot = final_plot, width = 11, height = 6.5, device = "pdf")
 
 manifest_cols <- c("figure_id", "filename", "purpose", "inputs")
 new_row <- data.frame(

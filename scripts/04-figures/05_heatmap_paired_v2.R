@@ -29,8 +29,10 @@ log2cpm_path <- "results_v2/deseq2/deseq2_paired_v2_log2cpm.tsv"
 counts_path <- "data/processed/counts.tsv"
 
 figure_dir <- "figures_v2/final"
+vector_dir <- "figures_v2/vector"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F05_de_heatmap_top40_paired_v2.png")
+output_pdf_path <- file.path(vector_dir, "F05_de_heatmap_top40_paired_v2.pdf")
 fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
 
 assert_columns <- function(df, cols, label) {
@@ -118,11 +120,39 @@ n_patients <- n_distinct(paired$patient_id)
 n_samples <- nrow(paired)
 
 de <- readr::read_tsv(de_path, show_col_types = FALSE)
-assert_columns(de, c("gene_id", "padj"), "deseq2_paired_v2_results.tsv")
+assert_columns(
+  de,
+  c("gene_id", "padj", "log2FoldChange"),
+  "deseq2_paired_v2_results.tsv"
+)
 
-top_de <- de %>%
-  filter(!is.na(padj)) %>%
-  arrange(padj) %>%
+lfc_col <- "log2FoldChange"
+if ("log2FoldChange_shrunk" %in% colnames(de) && !all(is.na(de$log2FoldChange_shrunk))) {
+  lfc_col <- "log2FoldChange_shrunk"
+}
+
+de_candidates <- de %>%
+  mutate(log2FC = .data[[lfc_col]]) %>%
+  filter(!is.na(padj), !is.na(log2FC), padj < 0.05, abs(log2FC) >= 1) %>%
+  arrange(padj, desc(abs(log2FC)))
+
+top_de <- bind_rows(
+  de_candidates %>% filter(log2FC > 0) %>% slice_head(n = 20),
+  de_candidates %>% filter(log2FC < 0) %>% slice_head(n = 20)
+) %>%
+  distinct(gene_id, .keep_all = TRUE)
+
+if (nrow(top_de) < 40) {
+  top_de <- bind_rows(
+    top_de,
+    de_candidates %>%
+      filter(!gene_id %in% top_de$gene_id) %>%
+      slice_head(n = 40 - nrow(top_de))
+  )
+}
+
+top_de <- top_de %>%
+  arrange(padj, desc(abs(log2FC))) %>%
   slice_head(n = 40) %>%
   mutate(gene_id_clean = clean_gene_id(gene_id))
 
@@ -290,6 +320,10 @@ anno_df <- paired %>%
     y = 1
   )
 
+sample_label_tbl <- paired %>%
+  mutate(label = paste0(as.character(patient_id), "-", substr(as.character(condition_main), 1, 1)))
+sample_label_map <- setNames(sample_label_tbl$label, sample_label_tbl$sample_id)
+
 pair_breaks <- seq(2.5, length(sample_order) - 0.5, by = 2)
 if (length(pair_breaks) == 1 && pair_breaks < 2.5) {
   pair_breaks <- numeric(0)
@@ -327,24 +361,32 @@ heat_plot <- ggplot(heat_df, aes(x = sample_id, y = gene_id_clean, fill = z_plot
     oob = scales::squish,
     name = "Row z-score"
   ) +
-  scale_x_discrete(drop = FALSE, expand = c(0, 0)) +
+  scale_x_discrete(drop = FALSE, labels = sample_label_map, expand = c(0, 0)) +
   scale_y_discrete(labels = function(x) label_map[x], expand = c(0, 0)) +
   labs(
     title = "Top 40 DE genes: paired heatmap (row z-scored)",
-    subtitle = "Columns are paired samples ordered as Normal then Tumor per patient",
+    subtitle = paste0(
+      "Balanced Tumor-/Normal-higher genes passing padj<0.05 and |shrunken log2FC|>=1; ",
+      basename(expr_source_used)
+    ),
     x = NULL,
-    y = NULL
+    y = NULL,
+    caption = paste(
+      "Rows are z-scored independently, so color represents relative expression within a\n",
+      "gene. Clustering is descriptive and does not define molecular subtypes."
+    )
   ) +
   theme_minimal(base_size = 14) +
   theme(
     panel.grid = element_blank(),
-    axis.text.x = element_blank(),
+    axis.text.x = element_text(size = 6, angle = 90, hjust = 1, vjust = 0.5),
     axis.ticks.x = element_blank(),
     axis.text.y = element_text(size = 7),
     plot.title = element_text(face = "bold", size = 16),
     plot.subtitle = element_text(size = 11),
     legend.title = element_text(size = 11),
     legend.text = element_text(size = 10),
+    plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 8)),
     plot.margin = margin(0, 6, 10, 10)
   ) +
   coord_cartesian(clip = "off")
@@ -429,8 +471,10 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(vector_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
 ggsave(output_path, plot = final_plot, width = 11, height = 7, dpi = 320)
+ggsave(output_pdf_path, plot = final_plot, width = 11, height = 7, device = "pdf")
 
 manifest_cols <- c("figure_id", "filename", "purpose", "inputs")
 new_row <- data.frame(

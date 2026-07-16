@@ -11,6 +11,8 @@
 # Outputs:
 #   - results_v2/enrichment/hallmark_gsea_paired_v2.tsv
 #   - results_v2/enrichment/go_bp_ora_paired_v2.tsv
+#   - results_v2/enrichment/go_bp_ora_representative_v2.tsv
+#   - results_v2/enrichment/enrichment_diagnostics_v2.tsv
 #   - results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt
 #
 # Determinism / reproducibility:
@@ -97,7 +99,9 @@ set.seed(seed_value)
 
 de_results_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
 go_out <- "results_v2/enrichment/go_bp_ora_paired_v2.tsv"
+go_representative_out <- "results_v2/enrichment/go_bp_ora_representative_v2.tsv"
 gsea_out <- "results_v2/enrichment/hallmark_gsea_paired_v2.tsv"
+diagnostics_out <- "results_v2/enrichment/enrichment_diagnostics_v2.tsv"
 session_info_out <- "results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt"
 
 #### 2) Load DE results + prepare gene ranks ####
@@ -275,7 +279,8 @@ try_go_ensembl <- tryCatch(
         keyType = "ENSEMBL",
         ont = "BP",
         pAdjustMethod = "BH",
-        qvalueCutoff = 0.05
+        pvalueCutoff = 1,
+        qvalueCutoff = 1
       )
     }
   },
@@ -312,7 +317,8 @@ if (inherits(try_go_ensembl, "error")) {
       keyType = "ENTREZID",
       ont = "BP",
       pAdjustMethod = "BH",
-      qvalueCutoff = 0.05
+      pvalueCutoff = 1,
+      qvalueCutoff = 1
     )
   } else {
     go_result <- NULL
@@ -328,16 +334,89 @@ if (nrow(go_df) > 0) {
   go_sig_term_count <- sum(go_df$p.adjust < 0.05, na.rm = TRUE)
 }
 
+# The raw table remains complete. This separate presentation table removes closely
+# related GO terms using ontology-aware semantic similarity and keeps the best-adjusted
+# p-value representative from each redundant group.
+go_representative_df <- data.frame()
+if (!is.null(go_result) && nrow(go_df) > 0) {
+  go_sig_result <- go_result
+  go_sig_result@result <- go_sig_result@result %>%
+    filter(!is.na(p.adjust), p.adjust < 0.05)
+
+  if (nrow(go_sig_result@result) > 0) {
+    go_simplified <- clusterProfiler::simplify(
+      go_sig_result,
+      cutoff = 0.7,
+      by = "p.adjust",
+      select_fun = min,
+      measure = "Wang"
+    )
+    go_representative_df <- as.data.frame(go_simplified) %>%
+      arrange(p.adjust) %>%
+      slice_head(n = 30) %>%
+      mutate(
+        simplification_method = "clusterProfiler::simplify",
+        semantic_measure = "Wang",
+        similarity_cutoff = 0.7
+      )
+  }
+}
+
+parse_ratio_denominator <- function(x) {
+  if (length(x) == 0 || is.na(x[[1]]) || !grepl("/", x[[1]], fixed = TRUE)) {
+    return(NA_integer_)
+  }
+  as.integer(strsplit(as.character(x[[1]]), "/", fixed = TRUE)[[1]][[2]])
+}
+
+go_annotated_sig_n <- if (nrow(go_df) > 0) parse_ratio_denominator(go_df$GeneRatio) else NA_integer_
+go_annotated_universe_n <- if (nrow(go_df) > 0) parse_ratio_denominator(go_df$BgRatio) else NA_integer_
+
+diagnostics_df <- data.frame(
+  metric = c(
+    "gsea_rankable_ensembl_ids",
+    "gsea_ensembl_ids_with_symbol",
+    "gsea_unique_symbols_after_duplicate_resolution",
+    "hallmark_gene_sets_tested",
+    "hallmark_gene_sets_padj_lt_0.05",
+    "ora_input_significant_genes",
+    "ora_input_universe_genes",
+    "ora_go_annotated_significant_genes",
+    "ora_go_annotated_universe_genes",
+    "go_terms_tested",
+    "go_terms_padj_lt_0.05",
+    "go_representative_terms_written"
+  ),
+  value = c(
+    nrow(de_rankable),
+    n_distinct(symbol_map$ENSEMBL),
+    nrow(de_symbol_rank),
+    nrow(gsea_df),
+    sum(gsea_df$padj < 0.05, na.rm = TRUE),
+    go_sig_input_n,
+    go_universe_n,
+    go_annotated_sig_n,
+    go_annotated_universe_n,
+    nrow(go_df),
+    go_sig_term_count,
+    nrow(go_representative_df)
+  ),
+  stringsAsFactors = FALSE
+)
+
 #### 5) Write outputs + sessionInfo ####
 dir.create(dirname(go_out), recursive = TRUE, showWarnings = FALSE)
 readr::write_tsv(go_df, go_out)
+readr::write_tsv(go_representative_df, go_representative_out)
 readr::write_tsv(gsea_df, gsea_out)
+readr::write_tsv(diagnostics_df, diagnostics_out)
 capture.output(sessionInfo(), file = session_info_out)
 
 cat("GO keyType used:", go_keytype_used, "\n")
 cat("GO universe size:", go_universe_n, "\n")
 cat("GO sig gene count used in ORA:", go_sig_input_n, "\n")
 cat("GO enriched terms (p.adjust < 0.05):", go_sig_term_count, "\n")
+cat("GO representative terms written:", nrow(go_representative_df), "\n")
 cat("Hallmark GSEA method used:", gsea_method_used, "\n")
 
 go_top10 <- if (nrow(go_df) > 0) {

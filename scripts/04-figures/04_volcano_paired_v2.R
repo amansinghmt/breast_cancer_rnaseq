@@ -23,8 +23,10 @@ suppressPackageStartupMessages({
 
 de_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
 figure_dir <- "figures_v2/final"
+vector_dir <- "figures_v2/vector"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F04_de_volcano_paired_v2.png")
+output_pdf_path <- file.path(vector_dir, "F04_de_volcano_paired_v2.pdf")
 fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
 
 assert_columns <- function(df, cols, label) {
@@ -113,6 +115,8 @@ sig_df <- volcano_df %>%
   arrange(padj, desc(abs(log2FC)))
 
 sig_count <- nrow(sig_df)
+up_count <- sum(sig_df$de_status == "Up in tumor")
+down_count <- sum(sig_df$de_status == "Up in normal")
 
 label_candidates <- sig_df
 if ("baseMean" %in% colnames(label_candidates)) {
@@ -123,8 +127,17 @@ if ("baseMean" %in% colnames(label_candidates)) {
   }
 }
 
-label_df <- label_candidates %>%
-  slice_head(n = 8) %>%
+label_df <- bind_rows(
+  label_candidates %>%
+    filter(de_status == "Up in tumor") %>%
+    arrange(padj, desc(abs(log2FC))) %>%
+    slice_head(n = 4),
+  label_candidates %>%
+    filter(de_status == "Up in normal") %>%
+    arrange(padj, desc(abs(log2FC))) %>%
+    slice_head(n = 4)
+) %>%
+  distinct(gene_id, .keep_all = TRUE) %>%
   mutate(label_display = label)
 
 labeled_genes <- label_df$label_display
@@ -134,7 +147,10 @@ if (length(labeled_genes) == 0) {
 
 mapped_symbol_count <- sum(!is.na(volcano_df$SYMBOL) & volcano_df$SYMBOL != "")
 
-subtitle_text <- "padj<0.05 (FDR) and |log2FC|>=1 (>=2x change); n=21 patients (42 samples)"
+subtitle_text <- paste0(
+  "Primary reporting rule: padj<0.05 and |shrunken log2FC|>=1; ",
+  "Tumor higher: ", up_count, "; Normal higher: ", down_count
+)
 
 help_items <- c(
   "Dot = one gene",
@@ -188,7 +204,11 @@ main_plot <- ggplot(volcano_df, aes(x = lfc_plot, y = neg_log10_padj)) +
     title = "Volcano plot: paired Tumor vs Normal",
     subtitle = subtitle_text,
     x = "log2 fold change (Tumor vs Normal)",
-    y = "-log10(adjusted p-value)"
+    y = "-log10(adjusted p-value)",
+    caption = paste(
+      "Labels are selected symmetrically from both directions using statistical evidence,\n",
+      "not prior biological preference. Values beyond +/-8 are clipped for display."
+    )
   ) +
   theme_minimal(base_size = 14) +
   theme(
@@ -198,6 +218,7 @@ main_plot <- ggplot(volcano_df, aes(x = lfc_plot, y = neg_log10_padj)) +
     legend.position = "top",
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 11),
+    plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 8)),
     plot.margin = margin(10, 8, 10, 10)
   ) +
   coord_cartesian(clip = "off")
@@ -267,8 +288,10 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(vector_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
 ggsave(output_path, plot = final_plot, width = 10, height = 6, dpi = 320)
+ggsave(output_pdf_path, plot = final_plot, width = 10, height = 6, device = "pdf")
 
 manifest_cols <- c("figure_id", "filename", "purpose", "inputs")
 new_row <- data.frame(

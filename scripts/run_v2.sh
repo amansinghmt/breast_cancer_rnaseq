@@ -170,7 +170,7 @@ trap cleanup_logging EXIT
 # Pipeline overview:
 #   Step A: Build metadata/QC and derive paired manifest for analysis cohort.
 #   Step B: Run paired DESeq2 model (~ patient_id + condition_main) and validate outputs.
-#   Step C: Run enrichment analyses and confirm non-empty enrichment tables.
+#   Step C: Run enrichment and robustness summaries; confirm required tables.
 #   Step D: Render all figures, then enforce exactly F01..F07 in final output folder.
 #   Step E: Validate final artifacts and write figure/output manifests with checksums.
 
@@ -196,7 +196,7 @@ PY
 
 step "Initialize output directories"
 mkdir -p results_v2 results_v2/logs results_v2/metadata results_v2/deseq2 results_v2/enrichment
-mkdir -p figures_v2/final figures_v2/archive
+mkdir -p results_v2/robustness figures_v2/final figures_v2/archive figures_v2/vector
 
 ARCHIVE_RUN_DIR="figures_v2/archive/run_${RUN_TS}"
 mkdir -p "${ARCHIVE_RUN_DIR}"
@@ -208,19 +208,31 @@ if ((${#existing_final[@]} > 0)); then
 fi
 shopt -u dotglob nullglob
 
+if [[ -d "figures_v2/vector" ]]; then
+  mkdir -p "${ARCHIVE_RUN_DIR}/vector"
+  shopt -s nullglob
+  existing_vector=(figures_v2/vector/*)
+  if ((${#existing_vector[@]} > 0)); then
+    mv "${existing_vector[@]}" "${ARCHIVE_RUN_DIR}/vector/"
+  fi
+  shopt -u nullglob
+fi
+
 rm -rf results_v2/metadata
 rm -rf results_v2/deseq2
 rm -rf results_v2/enrichment
+rm -rf results_v2/robustness
 rm -rf results_v2/differential_expression
 rm -rf results_v2/qc
 rm -rf results_v2/figures
 rm -rf figures_v2/de
+rm -rf figures_v2/vector
 rm -f results_v2/sessionInfo.txt
 rm -f results_v2/fig_manifest.tsv
 rm -f results_v2/output_manifest.tsv
 
-mkdir -p results_v2/metadata results_v2/deseq2 results_v2/enrichment
-mkdir -p figures_v2/final figures_v2/archive "${ARCHIVE_RUN_DIR}"
+mkdir -p results_v2/metadata results_v2/deseq2 results_v2/enrichment results_v2/robustness
+mkdir -p figures_v2/final figures_v2/vector figures_v2/archive "${ARCHIVE_RUN_DIR}"
 
 step "Restore R environment with renv"
 Rscript --vanilla -e 'if(!requireNamespace("renv", quietly=TRUE)) { cat("ERROR: Package \"renv\" is not installed. Install with install.packages(\"renv\").\n", file=stderr()); quit(status=1) }'
@@ -330,7 +342,9 @@ with open(de_path, newline="") as fh:
     de_cols = de_reader.fieldnames or []
     de_rows = list(de_reader)
 
-required_de_cols = {"gene_id", "log2FoldChange", "pvalue", "padj"}
+required_de_cols = {
+    "gene_id", "log2FoldChange", "pvalue", "padj", "log2FoldChange_shrunk"
+}
 missing_de_cols = sorted(required_de_cols - set(de_cols))
 if missing_de_cols:
     raise SystemExit(
@@ -412,8 +426,14 @@ import sys
 root = sys.argv[1]
 hallmark_path = os.path.join(root, "results_v2", "enrichment", "hallmark_gsea_paired_v2.tsv")
 go_path = os.path.join(root, "results_v2", "enrichment", "go_bp_ora_paired_v2.tsv")
+go_representative_path = os.path.join(
+    root, "results_v2", "enrichment", "go_bp_ora_representative_v2.tsv"
+)
+diagnostics_path = os.path.join(
+    root, "results_v2", "enrichment", "enrichment_diagnostics_v2.tsv"
+)
 
-for path in (hallmark_path, go_path):
+for path in (hallmark_path, go_path, go_representative_path, diagnostics_path):
     if not os.path.exists(path) or os.path.getsize(path) == 0:
         raise SystemExit(f"Missing or empty enrichment output: {path}")
 
@@ -427,6 +447,19 @@ for path in (hallmark_path, go_path):
 if data_rows == 0:
     raise SystemExit("All enrichment result tables are empty.")
 PY
+
+step "Step C2: robustness and presentation summaries"
+run_r_script scripts/05-reporting/01_build_robustness_summaries.R
+
+for summary_path in \
+  results_v2/robustness/analysis_metrics_v2.tsv \
+  results_v2/robustness/de_threshold_sensitivity_v2.tsv \
+  results_v2/robustness/low_count_prefilter_sensitivity_v2.tsv \
+  results_v2/robustness/lfc_agreement_v2.tsv \
+  results_v2/robustness/pca_outlier_summary_v2.tsv \
+  results_v2/robustness/top_de_genes_v2.tsv; do
+  [[ -s "${summary_path}" ]] || die "Missing robustness output: ${summary_path}"
+done
 
 step "Step D: figures F01-F07"
 run_r_script scripts/04-figures/01_publication_figures_paired_v2.R
@@ -531,10 +564,23 @@ key_outputs = [
     ("metadata_manifest", "results_v2/metadata/paired_manifest.tsv"),
     ("de_results", "results_v2/deseq2/deseq2_paired_v2_results.tsv"),
     ("de_samples_used", "results_v2/deseq2/deseq2_paired_v2_samples_used.tsv"),
+    ("de_vst", "results_v2/deseq2/deseq2_paired_v2_vst.tsv"),
+    ("de_diagnostics", "results_v2/deseq2/deseq2_paired_v2_diagnostics.tsv"),
+    ("de_size_factors", "results_v2/deseq2/deseq2_paired_v2_size_factors.tsv"),
     ("de_session_info", "results_v2/deseq2/sessionInfo_paired_v2.txt"),
     ("enrichment_hallmark", "results_v2/enrichment/hallmark_gsea_paired_v2.tsv"),
     ("enrichment_go_bp", "results_v2/enrichment/go_bp_ora_paired_v2.tsv"),
+    ("enrichment_go_bp_representative", "results_v2/enrichment/go_bp_ora_representative_v2.tsv"),
+    ("enrichment_diagnostics", "results_v2/enrichment/enrichment_diagnostics_v2.tsv"),
     ("enrichment_session_info", "results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt"),
+    ("robustness_metrics", "results_v2/robustness/analysis_metrics_v2.tsv"),
+    ("robustness_thresholds", "results_v2/robustness/de_threshold_sensitivity_v2.tsv"),
+    ("robustness_prefilter", "results_v2/robustness/low_count_prefilter_sensitivity_v2.tsv"),
+    ("robustness_lfc_agreement", "results_v2/robustness/lfc_agreement_v2.tsv"),
+    ("robustness_pca", "results_v2/robustness/pca_outlier_summary_v2.tsv"),
+    ("robustness_top_de", "results_v2/robustness/top_de_genes_v2.tsv"),
+    ("robustness_cohort", "results_v2/robustness/cohort_inclusion_summary_v2.tsv"),
+    ("robustness_session_info", "results_v2/robustness/sessionInfo_robustness_v2.txt"),
     ("session_info", "results_v2/sessionInfo.txt"),
     ("fig_manifest", "results_v2/fig_manifest.tsv"),
     ("figure_F01", "figures_v2/final/F01.png"),
@@ -544,6 +590,13 @@ key_outputs = [
     ("figure_F05", "figures_v2/final/F05.png"),
     ("figure_F06", "figures_v2/final/F06.png"),
     ("figure_F07", "figures_v2/final/F07.png"),
+    ("figure_F01_pdf", "figures_v2/vector/F01_qc_library_size_pairs.pdf"),
+    ("figure_F02_pdf", "figures_v2/vector/F02_qc_pca_pairs.pdf"),
+    ("figure_F03_pdf", "figures_v2/vector/F03_de_ma_paired_v2.pdf"),
+    ("figure_F04_pdf", "figures_v2/vector/F04_de_volcano_paired_v2.pdf"),
+    ("figure_F05_pdf", "figures_v2/vector/F05_de_heatmap_top40_paired_v2.pdf"),
+    ("figure_F06_pdf", "figures_v2/vector/F06_bio_hallmark_nes_paired_v2.pdf"),
+    ("figure_F07_pdf", "figures_v2/vector/F07_bio_go_bp_dotplot_paired_v2.pdf"),
     ("run_log", log_rel),
 ]
 

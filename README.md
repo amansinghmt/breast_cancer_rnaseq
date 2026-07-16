@@ -29,6 +29,7 @@ Key directories:
 
 - `data/`: raw inputs, processed counts, metadata
 - `scripts/`: pipeline scripts (`00-metadata`, `01-qc`, `02-de`, `03-pathways`, `04-figures`)
+- `dashboard/`: read-only Streamlit presentation of canonical outputs
 - `results_v2/`: validated v2 analysis outputs, manifests, logs
 - `figures_v2/`: final v2 figures (`final/`) and archived prior runs (`archive/`)
 
@@ -85,6 +86,29 @@ bash tests/smoke_test_v2.sh
 This smoke test runs the maintained v2 workflow and validates required outputs, manifests,
 and the exact final figure contract (`F01.png` to `F07.png`).
 
+### Local Presentation Dashboard
+
+The dashboard reads canonical `results_v2/` tables and `figures_v2/final/F01.png` through
+`F07.png`. It does not recompute or modify the analysis.
+
+```bash
+./.venv/bin/python -m pip install -r dashboard/requirements.txt
+bash run_dashboard.sh
+```
+
+Open `http://127.0.0.1:8501`. Verify startup with:
+
+```bash
+./.venv/bin/python tests/smoke_test_dashboard.py
+```
+
+Professor-facing guides:
+
+- `docs/ONCORNA_PROJECT_UNDERSTANDING.md`
+- `docs/ONCORNA_VIVA_SHEET.md`
+- `docs/ONCORNA_RESULTS_AND_ROBUSTNESS.md`
+- `docs/ONCORNA_CODE_LEARNING_MAP.md`
+
 ## What `run_v2.sh` Does (A-E)
 
 - **Step A: metadata + paired manifest**
@@ -125,13 +149,25 @@ These are required outputs enforced by `scripts/run_v2.sh`.
 
 - `results_v2/deseq2/deseq2_paired_v2_results.tsv`
 - `results_v2/deseq2/deseq2_paired_v2_samples_used.tsv`
+- `results_v2/deseq2/deseq2_paired_v2_vst.tsv` (exploratory figures only)
+- `results_v2/deseq2/deseq2_paired_v2_diagnostics.tsv`
 - `results_v2/deseq2/sessionInfo_paired_v2.txt`
 
 ### Enrichment
 
 - `results_v2/enrichment/hallmark_gsea_paired_v2.tsv`
 - `results_v2/enrichment/go_bp_ora_paired_v2.tsv`
+- `results_v2/enrichment/go_bp_ora_representative_v2.tsv`
+- `results_v2/enrichment/enrichment_diagnostics_v2.tsv`
 - `results_v2/enrichment/sessionInfo_enrichment_paired_v2.txt`
+
+### Robustness
+
+- `results_v2/robustness/analysis_metrics_v2.tsv`
+- `results_v2/robustness/de_threshold_sensitivity_v2.tsv`
+- `results_v2/robustness/low_count_prefilter_sensitivity_v2.tsv`
+- `results_v2/robustness/lfc_agreement_v2.tsv`
+- `results_v2/robustness/pca_outlier_summary_v2.tsv`
 
 ### Figures (Final Contract)
 

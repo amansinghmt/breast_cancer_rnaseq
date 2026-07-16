@@ -23,8 +23,10 @@ suppressPackageStartupMessages({
 
 de_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
 figure_dir <- "figures_v2/final"
+vector_dir <- "figures_v2/vector"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F03_de_ma_paired_v2.png")
+output_pdf_path <- file.path(vector_dir, "F03_de_ma_paired_v2.pdf")
 fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
 
 assert_columns <- function(df, cols, label) {
@@ -53,6 +55,7 @@ ma_df <- de %>%
   filter(!is.na(baseMean), !is.na(log2FC)) %>%
   mutate(
     x = log10(baseMean + 1),
+    log2FC_plot = pmax(pmin(log2FC, 8), -8),
     de_status = case_when(
       !is.na(padj) & padj < 0.05 & log2FC >= 1 ~ "Up in tumor",
       !is.na(padj) & padj < 0.05 & log2FC <= -1 ~ "Up in normal",
@@ -68,7 +71,13 @@ sig_count <- ma_df %>%
   filter(!is.na(padj), padj < 0.05, abs(log2FC) >= 1) %>%
   nrow()
 
-subtitle_text <- "padj<0.05 (FDR) and |log2FC|>=1 (>=2x change); n=21 patients (42 samples)"
+up_count <- sum(ma_df$de_status == "Up in tumor")
+down_count <- sum(ma_df$de_status == "Up in normal")
+
+subtitle_text <- paste0(
+  "Primary reporting rule: padj<0.05 and |shrunken log2FC|>=1; ",
+  "Tumor higher: ", up_count, "; Normal higher: ", down_count
+)
 
 help_items <- c(
   "Dot = one gene",
@@ -97,7 +106,7 @@ palette_status <- c(
   "Up in tumor" = "#D95F02"
 )
 
-main_plot <- ggplot(ma_df, aes(x = x, y = log2FC)) +
+main_plot <- ggplot(ma_df, aes(x = x, y = log2FC_plot)) +
   geom_hline(yintercept = 0, color = "#4A4A4A", linewidth = 0.4) +
   geom_hline(yintercept = c(-1, 1), linetype = "dashed", color = "#6D6D6D", linewidth = 0.4) +
   geom_point(
@@ -120,7 +129,11 @@ main_plot <- ggplot(ma_df, aes(x = x, y = log2FC)) +
     title = "MA plot: paired Tumor vs Normal",
     subtitle = subtitle_text,
     x = "Mean expression (baseMean; log10 scale)",
-    y = "log2 fold change (Tumor vs Normal)"
+    y = "Shrunken log2 fold change (Tumor vs Normal)",
+    caption = paste(
+      "Display values are clipped at +/-8. Statistical association does not establish\n",
+      "biological mechanism, clinical relevance, or biomarker validity."
+    )
   ) +
   theme_minimal(base_size = 14) +
   theme(
@@ -130,6 +143,7 @@ main_plot <- ggplot(ma_df, aes(x = x, y = log2FC)) +
     plot.subtitle = element_text(size = 12),
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 11),
+    plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 8)),
     plot.margin = margin(10, 8, 10, 10)
   ) +
   coord_cartesian(clip = "off")
@@ -163,7 +177,7 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
   final_plot <- main_plot + help_panel + patchwork::plot_layout(widths = c(5.0, 1.2))
 } else {
   xr <- range(ma_df$x, na.rm = TRUE)
-  yr <- range(ma_df$log2FC, na.rm = TRUE)
+  yr <- range(ma_df$log2FC_plot, na.rm = TRUE)
   x_annot <- xr[2] + 0.28 * (xr[2] - xr[1])
   y_annot <- yr[2]
 
@@ -186,8 +200,10 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(vector_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
 ggsave(output_path, plot = final_plot, width = 10, height = 6, dpi = 320)
+ggsave(output_pdf_path, plot = final_plot, width = 10, height = 6, device = "pdf")
 
 manifest_cols <- c("figure_id", "filename", "purpose", "inputs")
 new_row <- data.frame(

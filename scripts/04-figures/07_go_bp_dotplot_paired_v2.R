@@ -22,9 +22,12 @@ suppressPackageStartupMessages({
 })
 
 go_path <- "results_v2/enrichment/go_bp_ora_paired_v2.tsv"
+go_representative_path <- "results_v2/enrichment/go_bp_ora_representative_v2.tsv"
 figure_dir <- "figures_v2/final"
+vector_dir <- "figures_v2/vector"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F07_bio_go_bp_dotplot_paired_v2.png")
+output_pdf_path <- file.path(vector_dir, "F07_bio_go_bp_dotplot_paired_v2.pdf")
 fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
 
 assert_columns <- function(df, cols, label) {
@@ -60,8 +63,14 @@ shorten_term <- function(x, max_chars = 60) {
 
 go_df <- readr::read_tsv(go_path, show_col_types = FALSE)
 assert_columns(go_df, c("Description", "GeneRatio", "Count", "p.adjust"), "go_bp_ora_paired_v2.tsv")
+go_representative <- readr::read_tsv(go_representative_path, show_col_types = FALSE)
+assert_columns(
+  go_representative,
+  c("Description", "GeneRatio", "Count", "p.adjust"),
+  "go_bp_ora_representative_v2.tsv"
+)
 
-go_clean <- go_df %>%
+go_clean <- go_representative %>%
   filter(
     !is.na(Description),
     !is.na(GeneRatio),
@@ -78,7 +87,7 @@ if (nrow(go_clean) == 0) {
   stop("No GO terms remain after required-field and GeneRatio parsing filters.")
 }
 
-n_sig <- sum(go_clean$p.adjust < 0.05, na.rm = TRUE)
+n_sig <- sum(go_df$p.adjust < 0.05, na.rm = TRUE)
 sig_tbl <- go_clean %>%
   filter(p.adjust < 0.05) %>%
   arrange(p.adjust)
@@ -101,7 +110,10 @@ plot_tbl <- plot_tbl %>%
     term_short = factor(term_short, levels = rev(unique(term_short)))
   )
 
-subtitle_text <- "GeneRatio (fraction of DE genes); Count (#genes); p.adjust (FDR)"
+subtitle_text <- paste(
+  "Representative significant terms after Wang semantic-similarity reduction",
+  "(cutoff 0.7); full table retained"
+)
 
 main_plot <- ggplot(
   plot_tbl,
@@ -119,7 +131,11 @@ main_plot <- ggplot(
     subtitle = subtitle_text,
     x = "GeneRatio (fraction of DE genes)",
     y = NULL,
-    size = "Count"
+    size = "Count",
+    caption = paste(
+      "Terms summarize over-representation among genes passing padj<0.05 and\n",
+      "|shrunken log2FC|>=1. Redundancy reduction aids display and does not create evidence."
+    )
   ) +
   theme_minimal(base_size = 14) +
   theme(
@@ -129,6 +145,7 @@ main_plot <- ggplot(
     axis.text.y = element_text(size = 9),
     legend.title = element_text(size = 11),
     legend.text = element_text(size = 10),
+    plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 8)),
     plot.margin = margin(10, 8, 10, 10)
   ) +
   coord_cartesian(clip = "off")
@@ -152,7 +169,6 @@ help_text <- paste(
   ),
   collapse = "\n"
 )
-help_text <- paste(strwrap(help_text, width = 26), collapse = "\n")
 
 if (requireNamespace("patchwork", quietly = TRUE)) {
   help_panel <- ggplot() +
@@ -208,8 +224,10 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(vector_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
 ggsave(output_path, plot = final_plot, width = 11, height = 6.5, dpi = 320)
+ggsave(output_pdf_path, plot = final_plot, width = 11, height = 6.5, device = "pdf")
 
 manifest_cols <- c("figure_id", "filename", "purpose", "inputs")
 new_row <- data.frame(

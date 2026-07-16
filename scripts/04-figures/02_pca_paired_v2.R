@@ -24,8 +24,10 @@ suppressPackageStartupMessages({
 
 manifest_path <- "data/metadata/sample_manifest.tsv"
 figure_dir <- "figures_v2/final"
+vector_dir <- "figures_v2/vector"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F02_qc_pca_pairs.png")
+output_pdf_path <- file.path(vector_dir, "F02_qc_pca_pairs.pdf")
 fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
 counts_path <- "data/processed/counts.tsv"
 
@@ -221,6 +223,24 @@ scores <- data.frame(
 ) %>%
   left_join(paired %>% mutate(patient_id = as.character(patient_id)), by = "sample_id")
 
+robust_scale <- function(x) {
+  value <- mad(x, constant = 1.4826)
+  if (!is.finite(value) || value == 0) sd(x) else value
+}
+
+scores <- scores %>%
+  mutate(
+    robust_pc_distance = sqrt(
+      ((PC1 - median(PC1)) / robust_scale(PC1))^2 +
+        ((PC2 - median(PC2)) / robust_scale(PC2))^2
+    )
+  )
+
+label_df <- scores %>%
+  filter(robust_pc_distance > 3.5) %>%
+  arrange(desc(robust_pc_distance)) %>%
+  slice_head(n = 3)
+
 seg_df <- scores %>%
   select(patient_id, condition_main, PC1, PC2) %>%
   tidyr::pivot_wider(
@@ -253,7 +273,15 @@ print(pca_pair_dist %>% slice_head(n = 5))
 
 palette_condition <- c("Normal" = "#1B9E77", "Tumor" = "#D95F02")
 
-subtitle_text <- "n=21 patients (42 samples); include_paired==TRUE\nTop 2,000 variable genes"
+transformation_label <- if (grepl("vst", basename(expr_source_path), ignore.case = TRUE)) {
+  "DESeq2 VST (blind=FALSE)"
+} else {
+  "log2(CPM + 1) fallback"
+}
+subtitle_text <- paste0(
+  "", n_patients, " matched patients (", n_samples, " samples); ",
+  transformation_label, "; top 2,000 variable genes"
+)
 
 help_items <- c(
   "Each dot = one sample",
@@ -295,7 +323,11 @@ main_plot <- ggplot() +
     title = "PCA of paired samples (QC)",
     subtitle = subtitle_text,
     x = sprintf("PC1 (%.1f%% variance)", var1),
-    y = sprintf("PC2 (%.1f%% variance)", var2)
+    y = sprintf("PC2 (%.1f%% variance)", var2),
+    caption = paste(
+      "PCA is exploratory, not a significance test. Separation can reflect condition,\n",
+      "cell composition, batch effects, or other unmeasured differences."
+    )
   ) +
   theme_minimal(base_size = 14) +
   theme(
@@ -305,9 +337,21 @@ main_plot <- ggplot() +
     legend.position = "top",
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 11),
+    plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 8)),
     plot.margin = margin(10, 8, 10, 10)
   ) +
   coord_cartesian(clip = "off")
+
+if (requireNamespace("ggrepel", quietly = TRUE) && nrow(label_df) > 0) {
+  main_plot <- main_plot +
+    ggrepel::geom_text_repel(
+      data = label_df,
+      aes(x = PC1, y = PC2, label = paste0(patient_id, " ", condition_main)),
+      size = 3,
+      max.overlaps = 10,
+      show.legend = FALSE
+    )
+}
 
 if (requireNamespace("patchwork", quietly = TRUE)) {
   help_panel <- ggplot() +
@@ -361,8 +405,10 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(vector_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
 ggsave(output_path, plot = final_plot, width = 10, height = 6, dpi = 320)
+ggsave(output_pdf_path, plot = final_plot, width = 10, height = 6, device = "pdf")
 
 manifest_cols <- c("figure_id", "filename", "purpose", "inputs")
 new_row <- data.frame(

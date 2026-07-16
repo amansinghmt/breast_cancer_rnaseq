@@ -11,6 +11,9 @@
 # Outputs:
 #   - results_v2/deseq2/deseq2_paired_v2_results.tsv
 #   - results_v2/deseq2/deseq2_paired_v2_samples_used.tsv
+#   - results_v2/deseq2/deseq2_paired_v2_vst.tsv
+#   - results_v2/deseq2/deseq2_paired_v2_diagnostics.tsv
+#   - results_v2/deseq2/deseq2_paired_v2_size_factors.tsv
 #   - results_v2/deseq2/sessionInfo_paired_v2.txt
 #   - figures_v2/de/ma_plot_paired_v2.png
 #
@@ -75,6 +78,9 @@ counts_path <- "data/processed/counts.tsv"
 de_results_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
 samples_used_path <- "results_v2/deseq2/deseq2_paired_v2_samples_used.tsv"
 session_info_path <- "results_v2/deseq2/sessionInfo_paired_v2.txt"
+vst_path <- "results_v2/deseq2/deseq2_paired_v2_vst.tsv"
+diagnostics_path <- "results_v2/deseq2/deseq2_paired_v2_diagnostics.tsv"
+size_factors_path <- "results_v2/deseq2/deseq2_paired_v2_size_factors.tsv"
 ma_plot_path <- "figures_v2/de/ma_plot_paired_v2.png"
 
 required_manifest_cols <- c(
@@ -243,8 +249,24 @@ dds <- DESeqDataSetFromMatrix(
 )
 
 #### 4) Run DESeq() ####
-dds <- DESeq(dds)
-res <- results(dds, contrast = c("condition_main", "Tumor", "Normal"))
+# These are DESeq2 defaults, stated explicitly so the inferential contract is auditable.
+dds <- DESeq(
+  dds,
+  test = "Wald",
+  fitType = "parametric",
+  sfType = "ratio",
+  minReplicatesForReplace = 7
+)
+res <- results(
+  dds,
+  contrast = c("condition_main", "Tumor", "Normal"),
+  # DESeq2's default alpha=0.1 is retained because it controls independent-filter
+  # optimization. Reporting thresholds are applied separately at padj<0.05.
+  alpha = 0.1,
+  independentFiltering = TRUE,
+  cooksCutoff = TRUE,
+  pAdjustMethod = "BH"
+)
 
 #### 5) Extract results + shrinkage ####
 res_df <- as.data.frame(res)
@@ -269,12 +291,84 @@ res_shrunk <- lfcShrink(dds, coef = coef_name, type = "normal")
 res_df$log2FoldChange_shrunk <- as.data.frame(res_shrunk)[res_df$gene_id, "log2FoldChange"]
 cat("lfcShrink applied with type='normal' using coef:", coef_name, "\n")
 
-#### 6) Write outputs ####
+#### 6) Exploratory transformation + diagnostics ####
+# VST is for PCA/heatmaps only. The DE model continues to use raw integer counts.
+vst_obj <- varianceStabilizingTransformation(dds, blind = FALSE)
+vst_df <- as.data.frame(assay(vst_obj))
+vst_df$gene_id <- rownames(vst_df)
+vst_df <- vst_df %>% select(gene_id, all_of(ordered_samples))
+
+all_zero <- res_df$baseMean == 0
+pvalue_na <- is.na(res_df$pvalue)
+padj_na <- is.na(res_df$padj)
+independent_filtered <- !pvalue_na & padj_na
+positive_mean_pvalue_na <- !all_zero & pvalue_na
+filter_threshold <- metadata(res)$filterThreshold
+if (is.null(filter_threshold) || length(filter_threshold) == 0) {
+  filter_threshold <- NA_real_
+}
+
+diagnostics_df <- data.frame(
+  metric = c(
+    "genes_tested",
+    "all_zero_genes",
+    "genes_with_pvalue_na",
+    "positive_mean_genes_with_pvalue_na",
+    "genes_removed_by_independent_filtering",
+    "genes_with_padj_non_na",
+    "independent_filter_baseMean_threshold",
+    "wald_test",
+    "bh_adjustment",
+    "cooks_cutoff_enabled",
+    "lfc_shrinkage_method",
+    "vst_blind"
+  ),
+  value = c(
+    nrow(res_df),
+    sum(all_zero, na.rm = TRUE),
+    sum(pvalue_na),
+    sum(positive_mean_pvalue_na, na.rm = TRUE),
+    sum(independent_filtered),
+    sum(!padj_na),
+    as.character(signif(as.numeric(filter_threshold)[1], 8)),
+    "TRUE",
+    "Benjamini-Hochberg",
+    "TRUE",
+    "normal",
+    "FALSE"
+  ),
+  interpretation = c(
+    "Rows in the raw-count DESeq2 result table.",
+    "Genes with zero counts across all included samples; no statistical test is possible.",
+    "Genes without a nominal p-value.",
+    "Potential Cook's-distance/outlier-suppressed genes; zero means none were observed.",
+    "Genes with a p-value but NA adjusted p-value after independent filtering.",
+    "Genes retained for multiple-testing adjustment.",
+    "DESeq2-selected mean-expression threshold used for independent filtering.",
+    "DESeq2 coefficient test used for the Tumor-vs-Normal contrast.",
+    "Multiple-testing correction applied by results().",
+    "DESeq2 Cook's-distance filtering was requested.",
+    "Method used to stabilize noisy log2 fold-change estimates.",
+    "Transformation uses the fitted design/dispersion trend for exploratory plots."
+  ),
+  stringsAsFactors = FALSE
+)
+
+size_factors_df <- data.frame(
+  sample_id = colnames(dds),
+  size_factor = as.numeric(sizeFactors(dds)),
+  stringsAsFactors = FALSE
+)
+
+#### 7) Write outputs ####
 dir.create(dirname(de_results_path), recursive = TRUE, showWarnings = FALSE)
 dir.create(dirname(ma_plot_path), recursive = TRUE, showWarnings = FALSE)
 
 # Main DE table for enrichment + figure scripts.
 readr::write_tsv(res_df, de_results_path)
+readr::write_tsv(vst_df, vst_path)
+readr::write_tsv(diagnostics_df, diagnostics_path)
+readr::write_tsv(size_factors_df, size_factors_path)
 
 # Manifest subset actually used by DE; used by run_v2.sh strict cohort validation.
 readr::write_tsv(
