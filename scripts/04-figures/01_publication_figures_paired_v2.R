@@ -25,12 +25,13 @@ suppressPackageStartupMessages({
 manifest_path <- "data/metadata/sample_manifest.tsv"
 qc_path <- "results/qc/qc_summary.tsv"
 figure_dir <- "figures_v2/final"
+vector_dir <- "figures_v2/vector"
 results_dir <- "results_v2"
 figure_path <- file.path(figure_dir, "F01_qc_library_size_pairs.png")
+figure_pdf_path <- file.path(vector_dir, "F01_qc_library_size_pairs.pdf")
 fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
 
 qc_threshold <- 1e6
-subtitle_text <- "n=21 patients (42 samples); include_paired==TRUE; threshold 1e6"
 
 required_manifest_cols <- c("sample_id", "patient_id", "condition_main", "include_paired")
 preferred_library_cols <- c(
@@ -141,6 +142,14 @@ if (nrow(bad_pairs) > 0) {
   stop(paste0("Invalid paired structure. Expected exactly one Normal and one Tumor per patient: ", bad_msg))
 }
 
+n_included <- nrow(plot_df)
+n_patients <- n_distinct(plot_df$patient_id)
+n_excluded <- nrow(manifest) - n_included
+subtitle_text <- paste0(
+  "Included: ", n_patients, " matched patients (", n_included,
+  " samples); excluded: ", n_excluded, "; QC minimum = 1e6 gene-level counts"
+)
+
 patient_sort_df <- plot_df %>%
   group_by(patient_id) %>%
   summarize(pair_median = median(library_size), .groups = "drop") %>%
@@ -180,6 +189,7 @@ base_theme <- theme_minimal(base_size = 14) +
     legend.position = "top",
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 11),
+    plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 8)),
     plot.margin = margin(10, 10, 10, 10)
   )
 
@@ -193,9 +203,9 @@ label_df <- data.frame(
 help_items <- c(
   "Dot = one sample",
   "Line = matched pair (paired design = same patient)",
-  "Library size (sequencing depth = total reads)",
+  "Library size = sum of retained gene-level HTSeq counts",
   "Log10 scale (log scale)",
-  "Dashed line = QC minimum (minimum acceptable reads) = 1e6",
+  "Dashed line = QC minimum = 1e6 gene-level counts",
   "If a dot is left of dashed line -> low-depth sample (risky)"
 )
 
@@ -252,16 +262,20 @@ main_plot <- ggplot() +
     expand = expansion(mult = c(0.02, 0.08))
   ) +
   labs(
-    title = "Library size per sample (paired cohort)",
+    title = "Retained gene-level count depth across matched Tumor-Normal samples",
     subtitle = subtitle_text,
-    x = "Library size (reads, log10 scale)",
-    y = "Patient ID"
+    x = "Library size (sum of gene-level counts, log10 scale)",
+    y = "Patient ID",
+    caption = paste(
+      "QC display only: library size can reveal low-depth samples but does not establish\n",
+      "biological quality or absence of technical bias."
+    )
   ) +
   coord_cartesian(clip = "off") +
   base_theme +
   theme(plot.margin = margin(10, 6, 10, 10))
 
-if (requireNamespace("patchwork", quietly = TRUE)) {
+if (FALSE && requireNamespace("patchwork", quietly = TRUE)) {
   help_panel <- ggplot() +
     annotate(
       "text",
@@ -291,28 +305,14 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 
   f01_plot <- main_plot + help_panel + patchwork::plot_layout(widths = c(4.8, 1.2))
 } else {
-  help_x <- max(plot_df$library_size, na.rm = TRUE) * 1.35
-  help_y <- patient_levels[[length(patient_levels)]]
-
-  f01_plot <- main_plot +
-    annotate(
-      "label",
-      x = help_x,
-      y = help_y,
-      label = paste("How to read this figure\n", help_text),
-      hjust = 0,
-      vjust = 1,
-      size = 3.0,
-      label.size = 0.2,
-      fill = "white",
-      color = "#222222",
-      lineheight = 1.1
-    )
+  f01_plot <- main_plot
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(vector_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
 ggsave(figure_path, plot = f01_plot, width = 10, height = 6, dpi = 320)
+ggsave(figure_pdf_path, plot = f01_plot, width = 10, height = 6, device = "pdf")
 
 fig_manifest <- data.frame(
   figure_id = "F01",

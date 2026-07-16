@@ -1,17 +1,11 @@
 #!/usr/bin/env Rscript
 
 required_packages <- c("readr", "dplyr", "ggplot2", "scales")
-missing_packages <- required_packages[!vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)]
+missing_packages <- required_packages[
+  !vapply(required_packages, requireNamespace, logical(1), quietly = TRUE)
+]
 if (length(missing_packages) > 0) {
-  stop(
-    paste0(
-      "Missing required packages: ",
-      paste(missing_packages, collapse = ", "),
-      "\nInstall with:\ninstall.packages(c(",
-      paste(sprintf("'%s'", missing_packages), collapse = ", "),
-      "))"
-    )
-  )
+  stop("Missing required packages: ", paste(missing_packages, collapse = ", "))
 }
 
 suppressPackageStartupMessages({
@@ -21,222 +15,139 @@ suppressPackageStartupMessages({
   library(scales)
 })
 
-go_path <- "results_v2/enrichment/go_bp_ora_paired_v2.tsv"
+tumor_path <- "results_v2/enrichment/go_bp_ora_tumor_higher_representative_v2.tsv"
+normal_path <- "results_v2/enrichment/go_bp_ora_normal_higher_representative_v2.tsv"
 figure_dir <- "figures_v2/final"
+vector_dir <- "figures_v2/vector"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F07_bio_go_bp_dotplot_paired_v2.png")
+output_pdf_path <- file.path(vector_dir, "F07_bio_go_bp_dotplot_paired_v2.pdf")
 fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
 
 assert_columns <- function(df, cols, label) {
   missing_cols <- setdiff(cols, colnames(df))
   if (length(missing_cols) > 0) {
-    stop(
-      paste0(
-        label,
-        " missing required columns: ",
-        paste(missing_cols, collapse = ", ")
-      )
-    )
+    stop(label, " missing required columns: ", paste(missing_cols, collapse = ", "))
   }
 }
 
-parse_gene_ratio <- function(x) {
+parse_ratio <- function(x) {
   parts <- strsplit(as.character(x), "/", fixed = TRUE)
-  num <- suppressWarnings(vapply(parts, function(p) as.numeric(p[1]), numeric(1)))
-  den <- suppressWarnings(vapply(parts, function(p) as.numeric(p[2]), numeric(1)))
-  out <- num / den
-  out[!is.finite(out)] <- NA_real_
-  out
+  numerator <- suppressWarnings(vapply(parts, function(p) as.numeric(p[[1]]), numeric(1)))
+  denominator <- suppressWarnings(vapply(parts, function(p) as.numeric(p[[2]]), numeric(1)))
+  ratio <- numerator / denominator
+  ratio[!is.finite(ratio)] <- NA_real_
+  ratio
 }
 
-shorten_term <- function(x, max_chars = 60) {
-  x <- as.character(x)
-  ifelse(
-    nchar(x) > max_chars,
-    paste0(substr(x, 1, max_chars - 3), "..."),
-    x
-  )
+prepare_direction <- function(path, direction, panel_label) {
+  tbl <- readr::read_tsv(path, show_col_types = FALSE)
+  assert_columns(tbl, c("Description", "GeneRatio", "Count", "p.adjust"), basename(path))
+  tbl %>%
+    filter(!is.na(p.adjust), p.adjust < 0.05) %>%
+    mutate(
+      direction = direction,
+      panel = panel_label,
+      gene_ratio = parse_ratio(GeneRatio),
+      evidence = -log10(pmax(p.adjust, .Machine$double.xmin)),
+      presentation_family = case_when(
+        grepl("nuclear division|chromosome segregation|chromosome separation", Description) ~ "division and segregation",
+        grepl("spindle|microtubule", Description) ~ "spindle and microtubule",
+        grepl("nucleosome|protein-DNA|chromosome organization|chromosome condensation", Description) ~ "chromatin organization",
+        grepl("cell cycle|G2/M", Description) ~ "cell cycle",
+        grepl("circulation|blood pressure", Description) ~ "circulation",
+        grepl("vasculature|vascular|endothelial", Description) ~ "vascular biology",
+        grepl("muscle|action potential", Description) ~ "muscle and excitability",
+        grepl("lipid|fat cell|triglyceride|ketone", Description) ~ "lipid metabolism",
+        grepl("development|differentiation|maturation|gliogenesis", Description) ~ "development and differentiation",
+        grepl("response to", Description) ~ "response processes",
+        TRUE ~ Description
+      )
+    ) %>%
+    filter(is.finite(gene_ratio), is.finite(evidence)) %>%
+    arrange(p.adjust, desc(Count), Description) %>%
+    group_by(presentation_family) %>%
+    slice_head(n = 2) %>%
+    ungroup() %>%
+    arrange(p.adjust, desc(Count), Description) %>%
+    slice_head(n = 10)
 }
 
-go_df <- readr::read_tsv(go_path, show_col_types = FALSE)
-assert_columns(go_df, c("Description", "GeneRatio", "Count", "p.adjust"), "go_bp_ora_paired_v2.tsv")
-
-go_clean <- go_df %>%
-  filter(
-    !is.na(Description),
-    !is.na(GeneRatio),
-    !is.na(Count),
-    !is.na(p.adjust)
-  ) %>%
-  mutate(
-    gene_ratio = parse_gene_ratio(GeneRatio),
-    neg_log10_fdr = -log10(pmax(p.adjust, .Machine$double.xmin))
-  ) %>%
-  filter(!is.na(gene_ratio), is.finite(gene_ratio), is.finite(neg_log10_fdr))
-
-if (nrow(go_clean) == 0) {
-  stop("No GO terms remain after required-field and GeneRatio parsing filters.")
+tumor <- prepare_direction(tumor_path, "Tumor-higher", "A  Tumor-higher gene set")
+normal <- prepare_direction(normal_path, "Normal-higher", "B  Normal-higher gene set")
+if (nrow(tumor) == 0 && nrow(normal) == 0) {
+  stop("Neither directional GO analysis has significant representative terms.")
 }
 
-n_sig <- sum(go_clean$p.adjust < 0.05, na.rm = TRUE)
-sig_tbl <- go_clean %>%
-  filter(p.adjust < 0.05) %>%
-  arrange(p.adjust)
+plot_tbl <- bind_rows(tumor, normal) %>%
+  mutate(term_key = paste(panel, Description, sep = "___")) %>%
+  arrange(panel, desc(p.adjust)) %>%
+  mutate(term_key = factor(term_key, levels = unique(term_key)))
 
-if (nrow(sig_tbl) >= 15) {
-  plot_tbl <- sig_tbl %>%
-    slice_head(n = 15)
-} else {
-  plot_tbl <- go_clean %>%
-    arrange(p.adjust) %>%
-    slice_head(n = 15)
-}
+direction_colors <- c("Tumor-higher" = "#D95F02", "Normal-higher" = "#1B9E77")
 
-plot_tbl <- plot_tbl %>%
-  mutate(
-    term_short = shorten_term(Description, max_chars = 60)
-  ) %>%
-  arrange(p.adjust, desc(neg_log10_fdr)) %>%
-  mutate(
-    term_short = factor(term_short, levels = rev(unique(term_short)))
-  )
-
-subtitle_text <- "GeneRatio (fraction of DE genes); Count (#genes); p.adjust (FDR)"
-
-main_plot <- ggplot(
+final_plot <- ggplot(
   plot_tbl,
-  aes(x = gene_ratio, y = term_short, size = Count, color = neg_log10_fdr)
+  aes(x = gene_ratio, y = term_key, size = Count, color = direction, alpha = evidence)
 ) +
-  geom_point(alpha = 0.9) +
+  geom_point() +
+  facet_wrap(~panel, ncol = 2, scales = "free_y") +
+  scale_y_discrete(labels = function(x) sub("^.*___", "", x)) +
   scale_x_continuous(labels = scales::percent_format(accuracy = 1)) +
-  scale_color_gradient(
-    low = "#9ECAE1",
-    high = "#08519C",
-    name = "-log10(FDR)"
-  ) +
+  scale_color_manual(values = direction_colors, guide = "none") +
+  scale_alpha_continuous(name = "-log10(FDR)", range = c(0.45, 1)) +
+  scale_size_continuous(name = "Gene count", range = c(2.5, 7)) +
   labs(
-    title = "GO Biological Process enrichment (paired cohort)",
-    subtitle = subtitle_text,
-    x = "GeneRatio (fraction of DE genes)",
+    title = "Directional GO Biological Process over-representation",
+    subtitle = paste(
+      "Ten significant representatives per direction; Wang cutoff 0.7; max two terms per",
+      "documented keyword family; BH FDR < 0.05"
+    ),
+    x = "Gene ratio within the directional input list",
     y = NULL,
-    size = "Count"
+    caption = paste(
+      "Both analyses use the same 30,244-gene tested universe (15,233 GO-annotated).",
+      "ORA identifies over-representation, not mechanism."
+    )
   ) +
-  theme_minimal(base_size = 14) +
+  theme_minimal(base_size = 13) +
   theme(
     panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    strip.text = element_text(face = "bold", size = 11),
     plot.title = element_text(face = "bold", size = 17),
     plot.subtitle = element_text(size = 11),
-    axis.text.y = element_text(size = 9),
-    legend.title = element_text(size = 11),
-    legend.text = element_text(size = 10),
-    plot.margin = margin(10, 8, 10, 10)
-  ) +
-  coord_cartesian(clip = "off")
-
-help_items <- c(
-  "Dot = one GO term (biological process)",
-  "GeneRatio = fraction of DE genes in the term",
-  "Count = number of genes in the term",
-  "Color = -log10(FDR) (higher = more signif.)",
-  "This summarizes functions enriched in tumor vs normal"
-)
-
-help_text <- paste(
-  vapply(
-    help_items,
-    function(item) {
-      wrapped <- strwrap(item, width = 30, initial = "- ", exdent = 2)
-      paste(wrapped, collapse = "\n")
-    },
-    character(1)
-  ),
-  collapse = "\n"
-)
-help_text <- paste(strwrap(help_text, width = 26), collapse = "\n")
-
-if (requireNamespace("patchwork", quietly = TRUE)) {
-  help_panel <- ggplot() +
-    annotate(
-      "text",
-      x = 0,
-      y = 1,
-      label = "How to read this figure",
-      hjust = 0,
-      vjust = 1,
-      fontface = "bold",
-      size = 4.3
-    ) +
-    annotate(
-      "text",
-      x = 0,
-      y = 0.9,
-      label = help_text,
-      hjust = 0,
-      vjust = 1,
-      size = 3.2,
-      lineheight = 1.1
-    ) +
-    coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), clip = "off") +
-    theme_void() +
-    theme(plot.margin = margin(8, 8, 8, 0))
-
-  final_plot <- main_plot + help_panel + patchwork::plot_layout(widths = c(5.0, 1.6))
-  final_plot <- final_plot & theme(plot.margin = margin(10, 24, 10, 10))
-} else {
-  x_range <- range(plot_tbl$gene_ratio, na.rm = TRUE)
-  x_annot <- x_range[2] + 0.18 * (x_range[2] - x_range[1])
-
-  final_plot <- main_plot +
-    scale_x_continuous(
-      labels = scales::percent_format(accuracy = 1),
-      expand = expansion(mult = c(0.03, 0.45))
-    ) +
-    annotate(
-      "label",
-      x = x_annot,
-      y = 1,
-      label = paste("How to read this figure\n", help_text),
-      hjust = 0,
-      vjust = 1,
-      size = 3.0,
-      lineheight = 1.1,
-      label.size = 0.2,
-      fill = "white",
-      color = "#222222"
-    ) +
-    theme(plot.margin = margin(10, 130, 10, 10))
-}
+    axis.text.y = element_text(size = 8),
+    legend.position = "top",
+    plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 8)),
+    plot.margin = margin(10, 10, 10, 10)
+  )
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
-dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
-ggsave(output_path, plot = final_plot, width = 11, height = 6.5, dpi = 320)
+dir.create(vector_dir, recursive = TRUE, showWarnings = FALSE)
+ggsave(output_path, plot = final_plot, width = 13, height = 7.5, dpi = 320)
+ggsave(output_pdf_path, plot = final_plot, width = 13, height = 7.5, device = "pdf")
 
 manifest_cols <- c("figure_id", "filename", "purpose", "inputs")
 new_row <- data.frame(
   figure_id = "F07",
   filename = "F07_bio_go_bp_dotplot_paired_v2.png",
-  purpose = "Biology summary: GO BP over-representation dotplot for paired cohort DE genes",
-  inputs = "results_v2/enrichment/go_bp_ora_paired_v2.tsv",
+  purpose = "Directional GO BP over-representation for Tumor-higher and Normal-higher genes",
+  inputs = paste(tumor_path, normal_path, sep = "; "),
   stringsAsFactors = FALSE
 )
-
 if (file.exists(fig_manifest_path)) {
   fig_manifest <- readr::read_tsv(fig_manifest_path, show_col_types = FALSE)
   assert_columns(fig_manifest, manifest_cols, "fig_manifest.tsv")
   fig_manifest <- fig_manifest %>%
     select(all_of(manifest_cols)) %>%
-    filter(figure_id != "F07")
-  fig_manifest <- bind_rows(fig_manifest, new_row)
+    filter(figure_id != "F07") %>%
+    bind_rows(new_row)
 } else {
   fig_manifest <- new_row
 }
-
 readr::write_tsv(fig_manifest, fig_manifest_path)
 
-out_exists <- file.exists(output_path)
-out_size <- if (out_exists) file.info(output_path)$size else NA_integer_
-
-cat("terms plotted:", nrow(plot_tbl), "\n")
-cat("significant terms (p.adjust<0.05):", n_sig, "\n")
-cat("output file exists:", out_exists, "\n")
-cat("output file size:", out_size, "\n")
+cat("Tumor-higher representative terms plotted:", nrow(tumor), "\n")
+cat("Normal-higher representative terms plotted:", nrow(normal), "\n")
+cat("output file size:", file.info(output_path)$size, "\n")

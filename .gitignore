@@ -14,3 +14,14 @@ renv/staging/
 renv/cache/
 renv/library/
 renv/staging/
+# Generated outputs (recreated by pipeline)
+results/
+results_v2/
+figures/
+figures_v2/
+# Generated metadata tables (recreated by scripts)
+data/metadata/metadata.tsv
+data/metadata/sample_manifest.tsv
+# Local runtime artifacts
+.venv/
+*.log

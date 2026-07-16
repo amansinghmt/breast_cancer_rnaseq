@@ -21,10 +21,12 @@ suppressPackageStartupMessages({
   library(scales)
 })
 
-de_path <- "results_v2/differential_expression/deseq2_paired_v2_results.tsv"
+de_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
 figure_dir <- "figures_v2/final"
+vector_dir <- "figures_v2/vector"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F04_de_volcano_paired_v2.png")
+output_pdf_path <- file.path(vector_dir, "F04_de_volcano_paired_v2.pdf")
 fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
 
 assert_columns <- function(df, cols, label) {
@@ -98,8 +100,9 @@ volcano_df <- de %>%
     neg_log10_padj = -log10(padj_floor),
     lfc_plot = pmax(pmin(log2FC, 8), -8),
     de_status = case_when(
-      padj < 0.05 & log2FC >= 1 ~ "Up in tumor",
-      padj < 0.05 & log2FC <= -1 ~ "Up in normal",
+      padj < 0.05 & log2FC >= 1 ~ "Tumor-higher",
+      padj < 0.05 & log2FC <= -1 ~ "Normal-higher",
+      padj < 0.05 ~ "FDR only",
       TRUE ~ "Not significant"
     )
   )
@@ -113,6 +116,8 @@ sig_df <- volcano_df %>%
   arrange(padj, desc(abs(log2FC)))
 
 sig_count <- nrow(sig_df)
+up_count <- sum(sig_df$de_status == "Tumor-higher")
+down_count <- sum(sig_df$de_status == "Normal-higher")
 
 label_candidates <- sig_df
 if ("baseMean" %in% colnames(label_candidates)) {
@@ -123,8 +128,17 @@ if ("baseMean" %in% colnames(label_candidates)) {
   }
 }
 
-label_df <- label_candidates %>%
-  slice_head(n = 8) %>%
+label_df <- bind_rows(
+  label_candidates %>%
+    filter(de_status == "Tumor-higher") %>%
+    arrange(padj, desc(abs(log2FC))) %>%
+    slice_head(n = 4),
+  label_candidates %>%
+    filter(de_status == "Normal-higher") %>%
+    arrange(padj, desc(abs(log2FC))) %>%
+    slice_head(n = 4)
+) %>%
+  distinct(gene_id, .keep_all = TRUE) %>%
   mutate(label_display = label)
 
 labeled_genes <- label_df$label_display
@@ -134,7 +148,10 @@ if (length(labeled_genes) == 0) {
 
 mapped_symbol_count <- sum(!is.na(volcano_df$SYMBOL) & volcano_df$SYMBOL != "")
 
-subtitle_text <- "padj<0.05 (FDR) and |log2FC|>=1 (>=2x change); n=21 patients (42 samples)"
+subtitle_text <- paste0(
+  "Primary reporting rule: padj<0.05 and |shrunken log2FC|>=1; ",
+  "Tumor higher: ", up_count, "; Normal higher: ", down_count
+)
 
 help_items <- c(
   "Dot = one gene",
@@ -161,8 +178,9 @@ help_text <- paste(
 
 palette_status <- c(
   "Not significant" = "#BDBDBD",
-  "Up in normal" = "#1B9E77",
-  "Up in tumor" = "#D95F02"
+  "FDR only" = "#7F8C8D",
+  "Normal-higher" = "#1B9E77",
+  "Tumor-higher" = "#D95F02"
 )
 
 main_plot <- ggplot(volcano_df, aes(x = lfc_plot, y = neg_log10_padj)) +
@@ -181,14 +199,18 @@ main_plot <- ggplot(volcano_df, aes(x = lfc_plot, y = neg_log10_padj)) +
     size = 0.8
   ) +
   scale_color_manual(
-    values = palette_status[c("Up in normal", "Up in tumor")],
+    values = palette_status[c("FDR only", "Normal-higher", "Tumor-higher")],
     name = "DE status"
   ) +
   labs(
-    title = "Volcano plot: paired Tumor vs Normal",
+    title = "Effect size and adjusted statistical evidence",
     subtitle = subtitle_text,
     x = "log2 fold change (Tumor vs Normal)",
-    y = "-log10(adjusted p-value)"
+    y = "-log10(adjusted p-value)",
+    caption = paste(
+      "Labels are selected symmetrically from both directions using statistical evidence,\n",
+      "not prior biological preference; labels are not validated biomarkers. Values beyond +/-8 are clipped."
+    )
   ) +
   theme_minimal(base_size = 14) +
   theme(
@@ -198,6 +220,7 @@ main_plot <- ggplot(volcano_df, aes(x = lfc_plot, y = neg_log10_padj)) +
     legend.position = "top",
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 11),
+    plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 8)),
     plot.margin = margin(10, 8, 10, 10)
   ) +
   coord_cartesian(clip = "off")
@@ -215,7 +238,7 @@ if (requireNamespace("ggrepel", quietly = TRUE) && nrow(label_df) > 0) {
     )
 }
 
-if (requireNamespace("patchwork", quietly = TRUE)) {
+if (FALSE && requireNamespace("patchwork", quietly = TRUE)) {
   help_panel <- ggplot() +
     annotate(
       "text",
@@ -243,39 +266,21 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 
   final_plot <- main_plot + help_panel + patchwork::plot_layout(widths = c(5.0, 1.2))
 } else {
-  xr <- range(volcano_df$lfc_plot, na.rm = TRUE)
-  yr <- range(volcano_df$neg_log10_padj, na.rm = TRUE)
-  x_annot <- xr[2] + 0.28 * (xr[2] - xr[1])
-  y_annot <- yr[2]
-
-  final_plot <- main_plot +
-    scale_x_continuous(expand = expansion(mult = c(0.03, 0.42))) +
-    annotate(
-      "label",
-      x = x_annot,
-      y = y_annot,
-      label = paste("How to read this figure\n", help_text),
-      hjust = 0,
-      vjust = 1,
-      size = 3.0,
-      lineheight = 1.1,
-      label.size = 0.2,
-      fill = "white",
-      color = "#222222"
-    ) +
-    theme(plot.margin = margin(10, 140, 10, 10))
+  final_plot <- main_plot
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(vector_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
 ggsave(output_path, plot = final_plot, width = 10, height = 6, dpi = 320)
+ggsave(output_pdf_path, plot = final_plot, width = 10, height = 6, device = "pdf")
 
 manifest_cols <- c("figure_id", "filename", "purpose", "inputs")
 new_row <- data.frame(
   figure_id = "F04",
   filename = "F04_de_volcano_paired_v2.png",
   purpose = "DE summary: volcano plot (effect size vs significance) for paired Tumor vs Normal",
-  inputs = "results_v2/differential_expression/deseq2_paired_v2_results.tsv",
+  inputs = "results_v2/deseq2/deseq2_paired_v2_results.tsv",
   stringsAsFactors = FALSE
 )
 

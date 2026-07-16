@@ -1,17 +1,23 @@
 # Pathway enrichment
 
-Inputs:
-- results/differential_expression/deseq2_results.tsv
+## Maintained workflow (v2 paired)
 
-Methods:
-- Hallmark GSEA with fgsea (MSigDB Hallmark gene sets).
-- GO Biological Process over-representation with clusterProfiler::enrichGO.
+Run the repository's primary pipeline entry point:
 
-How to run:
-Rscript scripts/03-pathways/01_enrichment_hallmark_go.R
+```bash
+bash scripts/run_v2.sh
+```
 
-Outputs:
-- results/enrichment/hallmark_gsea.tsv
-- figures/enrichment/hallmark_gsea_top10.png
-- results/enrichment/go_enrich.tsv
-- figures/enrichment/go_barplot_top15.png
+This calls:
+
+- `scripts/03-pathways/01_enrichment_paired_v2.R`
+
+v2 enrichment outputs are written under `results_v2/enrichment/`.
+
+## Legacy workflow (deprecated, retained for reference)
+
+The script below is preserved for historical comparison and is not used by
+`scripts/run_v2.sh`:
+
+- `scripts/03-pathways/01_enrichment_hallmark_go.R`
+  - Legacy outputs under `results/enrichment/` and `figures/enrichment/`

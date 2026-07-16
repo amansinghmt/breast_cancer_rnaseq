@@ -24,16 +24,12 @@ suppressPackageStartupMessages({
 
 manifest_path <- "data/metadata/sample_manifest.tsv"
 figure_dir <- "figures_v2/final"
+vector_dir <- "figures_v2/vector"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F02_qc_pca_pairs.png")
+output_pdf_path <- file.path(vector_dir, "F02_qc_pca_pairs.pdf")
 fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
-counts_path <- "data/processed/counts.tsv"
-
-expr_candidates <- c(
-  "results_v2/differential_expression/deseq2_paired_v2_vst.tsv",
-  "results_v2/differential_expression/deseq2_paired_v2_vst_matrix.tsv",
-  "results_v2/differential_expression/deseq2_paired_v2_log2cpm.tsv"
-)
+vst_path <- "results_v2/deseq2/deseq2_paired_v2_vst.tsv"
 
 assert_columns <- function(df, cols, label) {
   missing_cols <- setdiff(cols, colnames(df))
@@ -113,24 +109,12 @@ sample_order <- paired$sample_id
 n_patients <- n_distinct(paired$patient_id)
 n_samples <- nrow(paired)
 
-selected_expr <- expr_candidates[file.exists(expr_candidates)]
-expr_source_type <- "counts_fallback"
-expr_source_path <- counts_path
-
-if (length(selected_expr) > 0) {
-  expr_source_type <- "precomputed_log_matrix"
-  expr_source_path <- selected_expr[[1]]
-} else if (!file.exists(counts_path)) {
-  stop(
-    paste0(
-      "No expression input found. Checked: ",
-      paste(c(expr_candidates, counts_path), collapse = ", ")
-    )
-  )
+if (!file.exists(vst_path)) {
+  stop("Required DESeq2 VST matrix is missing: ", vst_path)
 }
-
-if (expr_source_type == "precomputed_log_matrix") {
-  expr_df <- readr::read_tsv(expr_source_path, show_col_types = FALSE)
+expr_source_path <- vst_path
+{
+  expr_df <- readr::read_tsv(vst_path, show_col_types = FALSE)
   assert_columns(expr_df, c("gene_id"), paste0(basename(expr_source_path)))
 
   missing_samples <- setdiff(sample_order, colnames(expr_df))
@@ -162,38 +146,6 @@ if (expr_source_type == "precomputed_log_matrix") {
       )
     )
   }
-} else {
-  counts_df <- readr::read_tsv(counts_path, show_col_types = FALSE)
-  assert_columns(counts_df, c("gene_id"), "counts.tsv")
-
-  missing_samples <- setdiff(sample_order, colnames(counts_df))
-  if (length(missing_samples) > 0) {
-    stop(
-      paste0(
-        "counts.tsv missing paired sample columns: ",
-        paste(missing_samples, collapse = ", ")
-      )
-    )
-  }
-
-  counts_mat <- as.matrix(counts_df[, sample_order, drop = FALSE])
-  rownames(counts_mat) <- counts_df$gene_id
-  storage.mode(counts_mat) <- "numeric"
-
-  if (any(!is.finite(counts_mat))) {
-    stop("counts.tsv contains NA/Inf values in paired sample columns.")
-  }
-  if (any(counts_mat < 0)) {
-    stop("counts.tsv contains negative values.")
-  }
-
-  library_sizes <- colSums(counts_mat)
-  if (any(library_sizes <= 0)) {
-    stop("At least one paired sample has non-positive library size in counts.tsv.")
-  }
-
-  cpm_mat <- sweep(counts_mat, 2, library_sizes, "/") * 1e6
-  expr_mat <- log2(cpm_mat + 1)
 }
 
 gene_var <- apply(expr_mat, 1, var, na.rm = TRUE)
@@ -220,6 +172,19 @@ scores <- data.frame(
   stringsAsFactors = FALSE
 ) %>%
   left_join(paired %>% mutate(patient_id = as.character(patient_id)), by = "sample_id")
+
+robust_scale <- function(x) {
+  value <- mad(x, constant = 1.4826)
+  if (!is.finite(value) || value == 0) sd(x) else value
+}
+
+scores <- scores %>%
+  mutate(
+    robust_pc_distance = sqrt(
+      ((PC1 - median(PC1)) / robust_scale(PC1))^2 +
+        ((PC2 - median(PC2)) / robust_scale(PC2))^2
+    )
+  )
 
 seg_df <- scores %>%
   select(patient_id, condition_main, PC1, PC2) %>%
@@ -248,12 +213,42 @@ pca_pair_dist <- seg_df %>%
 dir.create(qc_dir, recursive = TRUE, showWarnings = FALSE)
 readr::write_tsv(pca_pair_dist, pca_pair_dist_path)
 
+top_pair_patients <- pca_pair_dist %>% slice_head(n = 2) %>% pull(patient_id)
+label_df <- scores %>%
+  mutate(
+    label_reason = case_when(
+      robust_pc_distance > 3.5 ~ "robust PCA distance > 3.5",
+      as.character(patient_id) %in% as.character(top_pair_patients) ~ "top-two paired PCA shift",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(label_reason)) %>%
+  arrange(desc(robust_pc_distance)) %>%
+  slice_head(n = 6)
+
+pca_diagnostics <- scores %>%
+  left_join(pca_pair_dist, by = "patient_id") %>%
+  mutate(
+    exploratory_outlier_flag = robust_pc_distance > 3.5,
+    objective_label_flag = sample_id %in% label_df$sample_id,
+    label_rule = ifelse(
+      objective_label_flag,
+      "robust PCA distance > 3.5 or sample belongs to one of two longest paired shifts",
+      "not labelled"
+    )
+  )
+readr::write_tsv(pca_diagnostics, file.path(qc_dir, "pca_sample_diagnostics_v2.tsv"))
+
 cat("Top 5 patients by Normal-Tumor PCA distance:\n")
 print(pca_pair_dist %>% slice_head(n = 5))
 
 palette_condition <- c("Normal" = "#1B9E77", "Tumor" = "#D95F02")
 
-subtitle_text <- "n=21 patients (42 samples); include_paired==TRUE\nTop 2,000 variable genes"
+transformation_label <- "DESeq2 VST (blind=FALSE)"
+subtitle_text <- paste0(
+  "", n_patients, " matched patients (", n_samples, " samples); ",
+  transformation_label, "; top 2,000 variable genes"
+)
 
 help_items <- c(
   "Each dot = one sample",
@@ -292,10 +287,14 @@ main_plot <- ggplot() +
   ) +
   scale_color_manual(values = palette_condition, name = "Condition") +
   labs(
-    title = "PCA of paired samples (QC)",
+    title = "Paired PCA of variance-stabilized expression",
     subtitle = subtitle_text,
     x = sprintf("PC1 (%.1f%% variance)", var1),
-    y = sprintf("PC2 (%.1f%% variance)", var2)
+    y = sprintf("PC2 (%.1f%% variance)", var2),
+    caption = paste(
+      "PCA is exploratory, not a significance test. Separation can reflect condition,\n",
+      "cell composition, batch effects, or other unmeasured differences."
+    )
   ) +
   theme_minimal(base_size = 14) +
   theme(
@@ -305,11 +304,23 @@ main_plot <- ggplot() +
     legend.position = "top",
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 11),
+    plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 8)),
     plot.margin = margin(10, 8, 10, 10)
   ) +
   coord_cartesian(clip = "off")
 
-if (requireNamespace("patchwork", quietly = TRUE)) {
+if (requireNamespace("ggrepel", quietly = TRUE) && nrow(label_df) > 0) {
+  main_plot <- main_plot +
+    ggrepel::geom_text_repel(
+      data = label_df,
+      aes(x = PC1, y = PC2, label = paste0(patient_id, " ", condition_main)),
+      size = 3,
+      max.overlaps = 10,
+      show.legend = FALSE
+    )
+}
+
+if (FALSE && requireNamespace("patchwork", quietly = TRUE)) {
   help_panel <- ggplot() +
     annotate(
       "text",
@@ -337,32 +348,14 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 
   final_plot <- main_plot + help_panel + patchwork::plot_layout(widths = c(5.0, 1.3))
 } else {
-  xr <- range(scores$PC1, na.rm = TRUE)
-  yr <- range(scores$PC2, na.rm = TRUE)
-  x_annot <- xr[2] + 0.32 * (xr[2] - xr[1])
-  y_annot <- yr[2]
-
-  final_plot <- main_plot +
-    scale_x_continuous(expand = expansion(mult = c(0.05, 0.45))) +
-    annotate(
-      "label",
-      x = x_annot,
-      y = y_annot,
-      label = paste("How to read this figure\n", help_text),
-      hjust = 0,
-      vjust = 1,
-      size = 3.0,
-      lineheight = 1.1,
-      label.size = 0.2,
-      fill = "white",
-      color = "#222222"
-    ) +
-    theme(plot.margin = margin(10, 140, 10, 10))
+  final_plot <- main_plot
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(vector_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
 ggsave(output_path, plot = final_plot, width = 10, height = 6, dpi = 320)
+ggsave(output_pdf_path, plot = final_plot, width = 10, height = 6, device = "pdf")
 
 manifest_cols <- c("figure_id", "filename", "purpose", "inputs")
 new_row <- data.frame(

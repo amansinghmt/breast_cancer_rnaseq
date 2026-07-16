@@ -21,10 +21,12 @@ suppressPackageStartupMessages({
   library(scales)
 })
 
-de_path <- "results_v2/differential_expression/deseq2_paired_v2_results.tsv"
+de_path <- "results_v2/deseq2/deseq2_paired_v2_results.tsv"
 figure_dir <- "figures_v2/final"
+vector_dir <- "figures_v2/vector"
 results_dir <- "results_v2"
 output_path <- file.path(figure_dir, "F03_de_ma_paired_v2.png")
+output_pdf_path <- file.path(vector_dir, "F03_de_ma_paired_v2.pdf")
 fig_manifest_path <- file.path(results_dir, "fig_manifest.tsv")
 
 assert_columns <- function(df, cols, label) {
@@ -49,13 +51,18 @@ if ("log2FoldChange_shrunk" %in% colnames(de) && !all(is.na(de$log2FoldChange_sh
 }
 
 ma_df <- de %>%
-  mutate(log2FC = .data[[lfc_col]]) %>%
+  mutate(
+    log2FC = .data[[lfc_col]],
+    gene_id_clean = sub("\\..*$", "", as.character(gene_id))
+  ) %>%
   filter(!is.na(baseMean), !is.na(log2FC)) %>%
   mutate(
     x = log10(baseMean + 1),
+    log2FC_plot = pmax(pmin(log2FC, 8), -8),
     de_status = case_when(
-      !is.na(padj) & padj < 0.05 & log2FC >= 1 ~ "Up in tumor",
-      !is.na(padj) & padj < 0.05 & log2FC <= -1 ~ "Up in normal",
+      !is.na(padj) & padj < 0.05 & log2FC >= 1 ~ "Tumor-higher",
+      !is.na(padj) & padj < 0.05 & log2FC <= -1 ~ "Normal-higher",
+      !is.na(padj) & padj < 0.05 ~ "FDR only",
       TRUE ~ "Not significant"
     )
   )
@@ -68,7 +75,43 @@ sig_count <- ma_df %>%
   filter(!is.na(padj), padj < 0.05, abs(log2FC) >= 1) %>%
   nrow()
 
-subtitle_text <- "padj<0.05 (FDR) and |log2FC|>=1 (>=2x change); n=21 patients (42 samples)"
+up_count <- sum(ma_df$de_status == "Tumor-higher")
+down_count <- sum(ma_df$de_status == "Normal-higher")
+fdr_only_count <- sum(ma_df$de_status == "FDR only")
+
+if (requireNamespace("org.Hs.eg.db", quietly = TRUE) &&
+    requireNamespace("AnnotationDbi", quietly = TRUE)) {
+  symbol_map <- AnnotationDbi::select(
+    org.Hs.eg.db::org.Hs.eg.db,
+    keys = unique(ma_df$gene_id_clean),
+    keytype = "ENSEMBL",
+    columns = "SYMBOL"
+  ) %>%
+    filter(!is.na(SYMBOL), nzchar(SYMBOL)) %>%
+    arrange(ENSEMBL, SYMBOL) %>%
+    distinct(ENSEMBL, .keep_all = TRUE)
+  ma_df <- ma_df %>% left_join(symbol_map, by = c("gene_id_clean" = "ENSEMBL"))
+} else {
+  ma_df <- ma_df %>% mutate(SYMBOL = NA_character_)
+}
+
+label_df <- bind_rows(
+  ma_df %>%
+    filter(de_status == "Tumor-higher", baseMean >= 10) %>%
+    arrange(padj, desc(abs(log2FC)), gene_id) %>%
+    slice_head(n = 3),
+  ma_df %>%
+    filter(de_status == "Normal-higher", baseMean >= 10) %>%
+    arrange(padj, desc(abs(log2FC)), gene_id) %>%
+    slice_head(n = 3)
+) %>%
+  mutate(label = ifelse(!is.na(SYMBOL), SYMBOL, gene_id_clean))
+
+subtitle_text <- paste0(
+  "Primary reporting rule: padj<0.05 and |shrunken log2FC|>=1; ",
+  "Tumor-higher: ", up_count, "; Normal-higher: ", down_count,
+  "; FDR-only: ", fdr_only_count
+)
 
 help_items <- c(
   "Dot = one gene",
@@ -93,11 +136,12 @@ help_text <- paste(
 
 palette_status <- c(
   "Not significant" = "#BDBDBD",
-  "Up in normal" = "#1B9E77",
-  "Up in tumor" = "#D95F02"
+  "FDR only" = "#7F8C8D",
+  "Normal-higher" = "#1B9E77",
+  "Tumor-higher" = "#D95F02"
 )
 
-main_plot <- ggplot(ma_df, aes(x = x, y = log2FC)) +
+main_plot <- ggplot(ma_df, aes(x = x, y = log2FC_plot)) +
   geom_hline(yintercept = 0, color = "#4A4A4A", linewidth = 0.4) +
   geom_hline(yintercept = c(-1, 1), linetype = "dashed", color = "#6D6D6D", linewidth = 0.4) +
   geom_point(
@@ -113,14 +157,18 @@ main_plot <- ggplot(ma_df, aes(x = x, y = log2FC)) +
     size = 0.75
   ) +
   scale_color_manual(
-    values = palette_status[c("Up in normal", "Up in tumor")],
+    values = palette_status[c("FDR only", "Normal-higher", "Tumor-higher")],
     name = "DE status"
   ) +
   labs(
-    title = "MA plot: paired Tumor vs Normal",
+    title = "Mean abundance and shrunken Tumor-Normal effect",
     subtitle = subtitle_text,
     x = "Mean expression (baseMean; log10 scale)",
-    y = "log2 fold change (Tumor vs Normal)"
+    y = "Shrunken log2 fold change (Tumor vs Normal)",
+    caption = paste(
+      "Display values are clipped at +/-8. Statistical association does not establish\n",
+      "biological mechanism, clinical relevance, or biomarker validity."
+    )
   ) +
   theme_minimal(base_size = 14) +
   theme(
@@ -130,11 +178,26 @@ main_plot <- ggplot(ma_df, aes(x = x, y = log2FC)) +
     plot.subtitle = element_text(size = 12),
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 11),
+    plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 8)),
     plot.margin = margin(10, 8, 10, 10)
   ) +
   coord_cartesian(clip = "off")
 
-if (requireNamespace("patchwork", quietly = TRUE)) {
+if (requireNamespace("ggrepel", quietly = TRUE) && nrow(label_df) > 0) {
+  main_plot <- main_plot +
+    ggrepel::geom_text_repel(
+      data = label_df,
+      aes(label = label),
+      size = 2.5,
+      box.padding = 0.25,
+      point.padding = 0.1,
+      min.segment.length = 0,
+      max.overlaps = 20,
+      show.legend = FALSE
+    )
+}
+
+if (FALSE && requireNamespace("patchwork", quietly = TRUE)) {
   help_panel <- ggplot() +
     annotate(
       "text",
@@ -162,39 +225,21 @@ if (requireNamespace("patchwork", quietly = TRUE)) {
 
   final_plot <- main_plot + help_panel + patchwork::plot_layout(widths = c(5.0, 1.2))
 } else {
-  xr <- range(ma_df$x, na.rm = TRUE)
-  yr <- range(ma_df$log2FC, na.rm = TRUE)
-  x_annot <- xr[2] + 0.28 * (xr[2] - xr[1])
-  y_annot <- yr[2]
-
-  final_plot <- main_plot +
-    scale_x_continuous(expand = expansion(mult = c(0.03, 0.42))) +
-    annotate(
-      "label",
-      x = x_annot,
-      y = y_annot,
-      label = paste("How to read this figure\n", help_text),
-      hjust = 0,
-      vjust = 1,
-      size = 3.0,
-      lineheight = 1.1,
-      label.size = 0.2,
-      fill = "white",
-      color = "#222222"
-    ) +
-    theme(plot.margin = margin(10, 140, 10, 10))
+  final_plot <- main_plot
 }
 
 dir.create(figure_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(vector_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
 ggsave(output_path, plot = final_plot, width = 10, height = 6, dpi = 320)
+ggsave(output_pdf_path, plot = final_plot, width = 10, height = 6, device = "pdf")
 
 manifest_cols <- c("figure_id", "filename", "purpose", "inputs")
 new_row <- data.frame(
   figure_id = "F03",
   filename = "F03_de_ma_paired_v2.png",
   purpose = "DE summary: MA plot (log2FC vs mean expression) for paired Tumor vs Normal",
-  inputs = "results_v2/differential_expression/deseq2_paired_v2_results.tsv",
+  inputs = "results_v2/deseq2/deseq2_paired_v2_results.tsv",
   stringsAsFactors = FALSE
 )
 
@@ -217,4 +262,3 @@ out_size <- if (out_exists) file.info(output_path)$size else NA_integer_
 cat("significant genes count (padj<0.05 & |LFC|>=1):", sig_count, "\n")
 cat("output file exists:", out_exists, "\n")
 cat("output file size:", out_size, "\n")
-

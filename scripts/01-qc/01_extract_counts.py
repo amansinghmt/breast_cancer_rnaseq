@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# LEGACY SCRIPT: retained for reference; not used by scripts/run_v2.sh.
 
 import sys
 from io import StringIO
