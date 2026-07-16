@@ -1,4 +1,11 @@
-# Breast Cancer RNA-seq (GSE306117)
+# OncoRNA: Paired Breast Tumor-Normal RNA-seq
+
+OncoRNA is a student-led bioinformatics learning and portfolio project based on public GEO
+dataset GSE306117. It asks which gene-expression differences and biological programs are
+associated with Tumor tissue after controlling patient identity with matched Normal samples.
+The project is reproducible and carefully bounded, but it is not a clinical or biomarker study.
+
+Final frozen version: `oncorna-v1.0-final`.
 
 ## Primary Workflow (Maintained)
 
@@ -86,7 +93,7 @@ bash tests/smoke_test_v2.sh
 This smoke test runs the maintained v2 workflow and validates required outputs, manifests,
 and the exact final figure contract (`F01.png` to `F07.png`).
 
-### Local Presentation Dashboard
+### Local Study and Presentation Dashboard
 
 The dashboard reads canonical `results_v2/` tables and `figures_v2/final/F01.png` through
 `F07.png`. It does not recompute or modify the analysis.
@@ -96,7 +103,14 @@ The dashboard reads canonical `results_v2/` tables and `figures_v2/final/F01.png
 bash run_dashboard.sh
 ```
 
-Open `http://127.0.0.1:8501`. Verify startup with:
+Open `http://127.0.0.1:8502`. This is a local demonstration address, not a public link.
+Override the port without disturbing another local app with:
+
+```bash
+ONCORNA_PORT=8510 bash run_dashboard.sh
+```
+
+Verify startup with:
 
 ```bash
 ./.venv/bin/python tests/smoke_test_dashboard.py
@@ -104,10 +118,26 @@ Open `http://127.0.0.1:8501`. Verify startup with:
 
 Professor-facing guides:
 
+- `docs/ONCORNA_FINAL_SCIENTIFIC_REPORT.md`
+- `docs/ONCORNA_MSC_PORTFOLIO_SUMMARY.md`
 - `docs/ONCORNA_PROJECT_UNDERSTANDING.md`
 - `docs/ONCORNA_VIVA_SHEET.md`
 - `docs/ONCORNA_RESULTS_AND_ROBUSTNESS.md`
 - `docs/ONCORNA_CODE_LEARNING_MAP.md`
+- `docs/ONCORNA_CLAIM_TRACEABILITY.md`
+- `docs/ONCORNA_FUTURE_STUDY_GUIDE.md`
+
+### Tested Software Environment
+
+- macOS arm64
+- R 4.5.2
+- DESeq2 1.50.2
+- Python 3.14.2
+- Streamlit 1.59.2
+- pandas 3.0.0
+
+Exact R and Python dependencies are recorded in `renv.lock`, `requirements.lock`, and the
+session-information files under `results_v2/`.
 
 ## What `run_v2.sh` Does (A-E)
 
@@ -203,3 +233,11 @@ They are not the recommended analysis path and are not maintained as the primary
 ## Citation
 
 Data source: NCBI GEO accession GSE306117.
+
+## Scientific Limitations
+
+The analysis uses one bulk-tissue cohort and does not model cell composition directly. Gene
+mapping is incomplete, enrichment terms overlap, and the work has no independent cohort,
+protein assay, functional experiment, clinical outcome model, or clinical validation. Results
+support cohort-specific biological hypotheses, not causation, diagnosis, prognosis, treatment
+recommendations, or validated biomarkers.

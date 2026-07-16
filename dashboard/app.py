@@ -41,6 +41,12 @@ PATHS = {
     "output_manifest": ROOT / "results_v2/output_manifest.tsv",
 }
 
+DOCUMENT_PATHS = {
+    "Final scientific report": ROOT / "docs/ONCORNA_FINAL_SCIENTIFIC_REPORT.md",
+    "MSc portfolio summary": ROOT / "docs/ONCORNA_MSC_PORTFOLIO_SUMMARY.md",
+    "Viva preparation sheet": ROOT / "docs/ONCORNA_VIVA_SHEET.md",
+}
+
 FIGURE_PATHS = {
     figure_id: ROOT / f"figures_v2/final/{figure_id}.png"
     for figure_id in FIGURE_CONTENT
@@ -103,7 +109,7 @@ def current_commit() -> str:
 def render_figure(figure_id: str) -> None:
     content = FIGURE_CONTENT[figure_id]
     st.subheader(f"{figure_id}. {content['title']}")
-    st.image(str(FIGURE_PATHS[figure_id]), use_container_width=True)
+    st.image(str(FIGURE_PATHS[figure_id]), width="stretch")
     st.markdown(f"**Caption.** {content['caption']}")
     col1, col2 = st.columns(2)
     with col1:
@@ -119,6 +125,20 @@ def download_table(label: str, path: Path) -> None:
         data=path.read_bytes(),
         file_name=path.name,
         mime="text/tab-separated-values",
+        width="stretch",
+    )
+
+
+def download_document(label: str, path: Path) -> None:
+    if not path.is_file():
+        st.warning(f"{label} is not available in this checkout.")
+        return
+    st.download_button(
+        label,
+        data=path.read_bytes(),
+        file_name=path.name,
+        mime="text/markdown",
+        width="stretch",
     )
 
 
@@ -132,17 +152,33 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-      :root { --ink:#16302b; --teal:#187f69; --orange:#d65a1f; --paper:#f7f3ea; }
+      :root { --ink:#16302b; --teal:#187f69; --orange:#d65a1f; --paper:#f7f3ea; --muted:#4a615a; }
       .stApp { background: linear-gradient(145deg, #fbfaf6 0%, #f2f7f3 58%, #fff8ee 100%); color:var(--ink); }
       h1, h2, h3 { font-family: Georgia, 'Times New Roman', serif; color:var(--ink); letter-spacing:-0.02em; }
       [data-testid="stSidebar"] { background:#112e28; }
       [data-testid="stSidebar"] * { color:#f7f3ea; }
-      div[data-testid="stMetric"] { background:rgba(255,255,255,.82); border:1px solid #dce6df; border-radius:14px; padding:14px; box-shadow:0 8px 28px rgba(22,48,43,.06); }
-      div[data-testid="stExpander"] { background:rgba(255,255,255,.72); border-radius:12px; border-color:#dce6df; }
+      [data-testid="stSidebar"] [role="radiogroup"] label:hover { background:rgba(255,255,255,.10); border-radius:8px; }
+      [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) { background:#f7f3ea; border-radius:8px; }
+      [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) * { color:#112e28 !important; font-weight:700; }
+      div[data-testid="stMetric"] { background:#ffffff; border:1px solid #cbdad3; border-radius:14px; padding:14px; box-shadow:0 8px 28px rgba(22,48,43,.06); }
+      [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * { color:#38544c !important; font-weight:650; }
+      div[data-testid="stMetricValue"] { color:#102f27 !important; }
+      div[data-testid="stExpander"] { background:#ffffff; border-radius:12px; border-color:#bfd2ca; overflow:hidden; }
+      div[data-testid="stExpander"] details summary { color:#173c32 !important; background:#eef6f2; font-weight:650; }
+      div[data-testid="stExpander"] details[open] summary { color:#ffffff !important; background:#176b59; }
+      div[data-testid="stExpander"] details[open] summary svg { fill:#ffffff !important; color:#ffffff !important; }
+      div[data-testid="stDataFrame"] { background:#ffffff; border:1px solid #cbdad3; border-radius:10px; }
+      [data-testid="stCaptionContainer"] p { color:#4a615a !important; }
+      [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p { color:#d9e8e2 !important; }
+      a { color:#0f6f5a !important; text-decoration:underline; text-underline-offset:2px; }
+      [data-testid="stDownloadButton"] button { background:#176b59; color:#ffffff; border:1px solid #0f5547; font-weight:650; }
+      [data-testid="stDownloadButton"] button:hover { background:#0f5547; color:#ffffff; border-color:#0b463b; }
+      [data-testid="stDownloadButton"] button:focus { box-shadow:0 0 0 3px rgba(214,90,31,.25); }
       .hero { padding:28px 34px; border-radius:22px; background:linear-gradient(105deg,#133f35,#187f69 68%,#d65a1f); color:white; margin-bottom:22px; }
       .hero h1 { color:white; margin:0; font-size:3.2rem; }
       .hero p { max-width:850px; font-size:1.08rem; margin:.7rem 0 0; color:#eef8f4; }
       .boundary { border-left:5px solid #d65a1f; background:#fff7ee; padding:15px 18px; border-radius:8px; }
+      .route { border:1px solid #cbdad3; background:#ffffff; padding:16px 19px; border-radius:12px; }
       .small-source { color:#5b6d67; font-size:.85rem; }
     </style>
     """,
@@ -152,7 +188,7 @@ st.markdown(
 missing = validate_required_files()
 if missing:
     st.error(
-        "The OncoRNA presentation cannot start because required canonical outputs are missing:\n\n"
+        "The OncoRNA dashboard cannot start because required analysis files are missing:\n\n"
         + "\n".join(f"- {path.relative_to(ROOT)}" for path in missing)
         + "\n\nRun `bash scripts/run_v2.sh` from the repository root."
     )
@@ -163,31 +199,31 @@ manifest = read_tsv(str(PATHS["manifest"]))
 
 sections = [
     "Overview",
-    "Pipeline",
     "Dataset and cohort",
+    "Pipeline",
     "Quality control",
     "Differential expression",
     "Pathway analysis",
-    "Methods explained",
     "Results and interpretation",
-    "Limitations and claim boundaries",
+    "Methods explained",
+    "Limitations and next steps",
     "Viva mode",
 ]
 
 st.sidebar.title("OncoRNA")
-st.sidebar.caption("Scientific presentation layer")
+st.sidebar.caption("Paired RNA-seq student project")
 section = st.sidebar.radio("Navigate", sections)
 st.sidebar.divider()
 st.sidebar.caption(f"Latest pipeline log: {latest_analysis_date()}")
 st.sidebar.caption(f"Repository commit: {current_commit()}")
-st.sidebar.caption("Canonical workflow: v2 paired")
+st.sidebar.caption("Analysis version: Paired workflow v2")
 
 if section == "Overview":
     st.markdown(
         """
         <div class="hero">
           <h1>OncoRNA</h1>
-          <p>A reproducible paired bulk RNA-seq analysis asking which genes and biological programs differ between breast Tumor and matched Normal tissue in GEO dataset GSE306117.</p>
+          <p>A student-led exploration of paired bulk RNA-seq data, asking which genes and biological programs differ between breast Tumor and matched Normal tissue in GEO dataset GSE306117.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -198,16 +234,15 @@ if section == "Overview":
         ("Included samples", "included_samples"),
         ("Genes tested", "genes_tested"),
         ("padj < 0.05", "genes_padj_lt_0.05"),
-        ("padj + effect rule", "genes_padj_lt_0.05_abs_shrunk_lfc_ge_1"),
+        ("FDR + effect rule", "genes_padj_lt_0.05_abs_shrunk_lfc_ge_1"),
     ]
     for col, (label, key) in zip(cols, overview_metrics, strict=True):
         col.metric(label, f"{int(metrics[key]):,}")
-    st.subheader("Why this project exists")
+    st.subheader("Biological question")
     st.write(
-        "Gene-expression differences can reveal biological programs associated with tissue state. "
-        "Matched samples are especially useful because each patient provides their own Normal baseline. "
-        "The project connects gene-level statistical tests to pathway-level hypotheses while preserving "
-        "reproducible inputs, outputs, software versions and checksums."
+        "This analysis asks which gene-expression differences are associated with Tumor tissue when each "
+        "sample is compared with matched Normal tissue from the same patient. I used this question to learn "
+        "how count data, paired statistical models and pathway analysis fit together in an RNA-seq workflow."
     )
     st.info(
         "Primary model: `~ patient_id + condition_main`. The patient term controls baseline "
@@ -219,6 +254,66 @@ if section == "Overview":
     b.metric("GO terms with padj < 0.05", f"{int(metrics['go_terms_padj_lt_0.05']):,}")
     c.metric("Combined GO representatives (supplement)", f"{int(metrics['go_representative_terms']):,}")
     st.caption(f"Current presentation generated from the latest successful run: {latest_analysis_date()}.")
+
+    st.subheader("Suggested presentation route")
+    st.markdown(
+        """
+        <div class="route">
+        <strong>For a short professor review:</strong> Overview → Dataset and cohort → Pipeline → Quality
+        control → Differential expression → Pathway analysis → Results and interpretation → Limitations and
+        next steps.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.subheader("How I approached this project")
+    st.markdown(
+        """
+        1. Identified a paired public breast RNA-seq dataset.
+        2. Organised the metadata and gene-count files.
+        3. Applied cohort and retained-count-depth checks.
+        4. Modelled Tumor-Normal differences while controlling patient identity.
+        5. Examined gene-level effects.
+        6. Connected ranked genes to pathways and biological processes.
+        7. Checked robustness, limitations and reproducibility.
+        8. Built this dashboard to study and present the work.
+        """
+    )
+
+    learn_col, continue_col = st.columns(2)
+    with learn_col:
+        st.subheader("What I learned through this project")
+        st.markdown(
+            """
+            - How RNA-seq count data are organised.
+            - Why matched samples can reduce between-patient variation.
+            - Why sequencing depth needs to be accounted for.
+            - How paired DESeq2 compares Tumor and Normal tissue.
+            - Why thousands of p-values need multiple-testing correction.
+            - How gene-level differences connect to pathway hypotheses.
+            - Why enrichment does not prove a mechanism.
+            - Why reproducibility and limitations matter.
+            """
+        )
+    with continue_col:
+        st.subheader("What I am continuing to learn")
+        st.markdown(
+            """
+            - Negative-binomial models and dispersion estimation.
+            - Paired generalized linear models and independent filtering.
+            - Fold-change shrinkage and enrichment statistics.
+            - GSEA and GO ORA assumptions.
+            - R and Python code structure.
+            - Independent validation and stronger biological interpretation.
+            """
+        )
+
+    st.subheader("Project documents")
+    doc_cols = st.columns(3)
+    for col, (label, path) in zip(doc_cols, DOCUMENT_PATHS.items(), strict=True):
+        with col:
+            download_document(label, path)
 
 elif section == "Pipeline":
     st.title("Pipeline")
@@ -234,13 +329,13 @@ elif section == "Pipeline":
           A -> B -> C -> D -> E -> F;
         }
         """,
-        use_container_width=True,
+        width="stretch",
     )
     for name, operation, output, failure in PIPELINE_STAGES:
         with st.expander(name):
             st.markdown(f"**Operation:** {operation}")
             st.markdown(f"**Output:** `{output}`")
-            st.markdown(f"**Possible failure:** {failure}")
+            st.markdown(f"**Point to check:** {failure}")
 
 elif section == "Dataset and cohort":
     st.title("Dataset and cohort")
@@ -256,13 +351,13 @@ elif section == "Dataset and cohort":
     )
     cohort_summary = read_tsv(str(PATHS["cohort_summary"]))
     st.subheader("Inclusion and exclusion summary")
-    st.dataframe(cohort_summary, use_container_width=True, hide_index=True)
+    st.dataframe(cohort_summary, width="stretch", hide_index=True)
     included = manifest[manifest["include_paired"].astype(str).str.upper() == "TRUE"]
     st.subheader("Included matched cohort")
     st.dataframe(
         included[["sample_id", "patient_id", "condition_main", "library_size"]]
         .sort_values(["patient_id", "condition_main"]),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
     st.markdown(
@@ -284,7 +379,7 @@ elif section == "Quality control":
             "Samples are ranked by robust distance in PC1-PC2 space. The flag threshold was "
             "defined before inspection at 3.5; it is exploratory and not an exclusion rule."
         )
-        st.dataframe(pca_outliers.head(15), use_container_width=True, hide_index=True)
+        st.dataframe(pca_outliers.head(15), width="stretch", hide_index=True)
         st.metric("Flagged samples", f"{int(metrics['pca_exploratory_outliers'])}")
 
 elif section == "Differential expression":
@@ -297,11 +392,11 @@ elif section == "Differential expression":
     cols[2].metric("Tumor-higher", f"{int(primary['tumor_higher']):,}")
     cols[3].metric("Normal-higher", f"{int(primary['normal_higher']):,}")
     with st.expander("Threshold and robustness summaries"):
-        st.dataframe(strict, use_container_width=True, hide_index=True)
+        st.dataframe(strict, width="stretch", hide_index=True)
         st.markdown("**Predefined low-count sensitivity**")
-        st.dataframe(read_tsv(str(PATHS["prefilter"])), use_container_width=True, hide_index=True)
+        st.dataframe(read_tsv(str(PATHS["prefilter"])), width="stretch", hide_index=True)
         st.markdown("**Unshrunk versus shrunken effect agreement**")
-        st.dataframe(read_tsv(str(PATHS["lfc_agreement"])), use_container_width=True, hide_index=True)
+        st.dataframe(read_tsv(str(PATHS["lfc_agreement"])), width="stretch", hide_index=True)
     tabs = st.tabs(["F03 MA", "F04 Volcano", "F05 Heatmap"])
     for tab, figure_id in zip(tabs, ["F03", "F04", "F05"], strict=True):
         with tab:
@@ -314,20 +409,20 @@ elif section == "Differential expression":
             "SYMBOL"
         ].astype(str).str.contains(query, case=False, na=False)
         top_de = top_de[mask]
-    st.dataframe(top_de, use_container_width=True, hide_index=True, height=430)
-    download_table("Download canonical DE table", PATHS["de"])
+    st.dataframe(top_de, width="stretch", hide_index=True, height=430)
+    download_table("Download DE results table", PATHS["de"])
 
 elif section == "Pathway analysis":
     st.title("Pathway analysis")
     cols = st.columns(3)
     cols[0].metric("Hallmark sets tested", f"{int(metrics['hallmark_sets_tested'])}")
     cols[1].metric("Significant Hallmark sets", f"{int(metrics['hallmark_sets_padj_lt_0.05'])}")
-    cols[2].metric("Significant GO BP terms", f"{int(metrics['go_terms_padj_lt_0.05'])}")
+    cols[2].metric("Combined GO supplement terms", f"{int(metrics['go_terms_padj_lt_0.05'])}")
     tabs = st.tabs(["F06 Hallmark", "F07 Directional GO BP", "Combined GO supplement"])
     with tabs[0]:
         render_figure("F06")
         hallmark = read_tsv(str(PATHS["hallmark"]))
-        st.dataframe(hallmark, use_container_width=True, hide_index=True, height=350)
+        st.dataframe(hallmark, width="stretch", hide_index=True, height=350)
         download_table("Download Hallmark table", PATHS["hallmark"])
     with tabs[1]:
         render_figure("F07")
@@ -356,7 +451,7 @@ elif section == "Pathway analysis":
             ],
             ignore_index=True,
         )
-        st.dataframe(representative, use_container_width=True, hide_index=True, height=350)
+        st.dataframe(representative, width="stretch", hide_index=True, height=350)
         col1, col2 = st.columns(2)
         with col1:
             download_table("Download full Tumor-higher GO table", PATHS["go_tumor"])
@@ -371,7 +466,7 @@ elif section == "Pathway analysis":
             "This table combines Tumor-higher and Normal-higher genes. It supports only processes "
             "over-represented among genes differing between conditions; it cannot establish direction."
         )
-        st.dataframe(read_tsv(str(PATHS["go_representative"])), use_container_width=True, hide_index=True)
+        st.dataframe(read_tsv(str(PATHS["go_representative"])), width="stretch", hide_index=True)
         download_table("Download complete combined GO table", PATHS["go"])
 
 elif section == "Methods explained":
@@ -387,35 +482,31 @@ elif section == "Results and interpretation":
         (
             "Paired differential expression",
             "6,315 genes have padj<0.05; 1,636 also have |shrunken log2FC|>=1.",
-            "Tumor and matched Normal tissues differ broadly at transcript level.",
-            "Cell-type composition, tissue structure, batch and unmeasured covariates may contribute.",
-            "Replicate in an independent matched cohort and validate selected genes experimentally.",
+            "The result suggests broad transcript-level differences between Tumor and matched Normal tissue in this cohort.",
+            "Bulk-cell composition, tissue structure, batch and other unmeasured factors may contribute. The result would need independent replication and experimental follow-up.",
         ),
         (
             "Hallmark enrichment",
             "35 of 50 Hallmark sets have padj<0.05; E2F, MYC and G2M rank toward Tumor.",
-            "Coordinated proliferation/cell-cycle-associated programs are consistent with the Tumor-side ranking.",
-            "Gene-set overlap and tissue composition can produce coordinated rank patterns.",
-            "Confirm with independent data and orthogonal proliferation measurements.",
+            "Coordinated proliferation and cell-cycle programs are enriched toward the Tumor-higher side of the ranked list.",
+            "Gene-set overlap and tissue composition can produce coordinated patterns. Enrichment does not prove pathway activation and needs independent confirmation.",
         ),
         (
             "Directional GO BP enrichment",
             "259 Tumor-higher and 694 Normal-higher GO terms have BH FDR<0.05; both use the same tested background.",
             "Tumor-higher genes are over-represented in cell-division/chromosome themes, while Normal-higher genes include circulation, muscle, extracellular-matrix and tissue-context themes.",
-            "GO terms overlap, annotation is incomplete, and bulk-cell composition may explain part of either direction.",
-            "Use independent data and targeted functional assays before mechanistic claims.",
+            "GO terms overlap, annotation is incomplete and bulk-cell composition may explain part of either direction. These are hypotheses rather than demonstrated mechanisms.",
         ),
     ]
-    for title, evidence, meaning, alternative, validation in result_rows:
+    for title, finding, interpretation, limitation in result_rows:
         st.subheader(title)
-        st.markdown(f"**Observation and evidence:** {evidence}")
-        st.markdown(f"**Possible meaning:** {meaning}")
-        st.markdown(f"**Alternative explanation:** {alternative}")
-        st.markdown(f"**Required validation:** {validation}")
+        st.markdown(f"**Finding:** {finding}")
+        st.markdown(f"**Interpretation:** {interpretation}")
+        st.markdown(f"**Important limitation:** {limitation}")
         st.divider()
 
-elif section == "Limitations and claim boundaries":
-    st.title("Limitations and claim boundaries")
+elif section == "Limitations and next steps":
+    st.title("Limitations and next steps")
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("What this project can support")
@@ -431,16 +522,36 @@ elif section == "Limitations and claim boundaries":
         "mapping are incomplete; thresholds affect reported counts; and no independent cohort, clinical study, "
         "protein assay or functional experiment is included."
     )
-    st.subheader("AI-use disclosure")
+    st.subheader("What would strengthen the analysis")
     st.write(
-        "AI assistance contributed to code construction, software review, visual presentation and learning material. "
-        "The analysis owner must personally understand and defend the cohort rules, statistical model, contrast, "
-        "thresholds, outputs, limitations and claim boundaries."
+        "The next scientific step would be to repeat the paired model in an independent cohort, examine technical "
+        "and cell-composition effects, and test selected genes or pathways with orthogonal measurements."
+    )
+    st.subheader("Project development and authorship")
+    st.write(
+        "OncoRNA is a student-led learning and portfolio project developed with AI-assisted coding, review and "
+        "documentation. I selected and directed the project question and workflow, reviewed the generated outputs "
+        "and validation reports, and am using the project to build deeper skills in RNA-seq, statistics, R, Python "
+        "and reproducible bioinformatics. I remain responsible for explaining the methods, results and limitations."
+    )
+    st.subheader("References and project resources")
+    st.markdown(
+        """
+        - NCBI Gene Expression Omnibus: [GSE306117](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE306117)
+        - Love MI, Huber W, Anders S. [Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2](https://doi.org/10.1186/s13059-014-0550-8). *Genome Biology* (2014).
+        - [fgsea Bioconductor package](https://bioconductor.org/packages/fgsea)
+        - [clusterProfiler Bioconductor package](https://bioconductor.org/packages/clusterProfiler)
+        - [MSigDB Hallmark gene sets](https://www.gsea-msigdb.org/gsea/msigdb/human/collections.jsp#H)
+        - [Gene Ontology](https://geneontology.org/)
+        """
     )
 
 elif section == "Viva mode":
     st.title("Viva mode")
-    st.write("Short answers first. Expand each answer by connecting it to a figure or code file.")
+    st.write(
+        "These are short explanations I can practise before discussing the project. Each answer can be expanded "
+        "by connecting it to a figure, table or script."
+    )
     for question, answer in VIVA_QA:
         with st.expander(question):
             st.write(answer)

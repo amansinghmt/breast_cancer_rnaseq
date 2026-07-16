@@ -3,21 +3,28 @@
 import os
 import hashlib
 import subprocess
+import socket
 import sys
 import time
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PORT = 8502
-HEALTH_URL = f"http://127.0.0.1:{PORT}/_stcore/health"
-CANONICAL_FILES = [
-    ROOT / "results_v2/deseq2/deseq2_paired_v2_results.tsv",
-    ROOT / "results_v2/enrichment/hallmark_gsea_paired_v2.tsv",
-    ROOT / "results_v2/enrichment/go_bp_ora_paired_v2.tsv",
-    ROOT / "results_v2/enrichment/go_bp_ora_tumor_higher_paired_v2.tsv",
-    ROOT / "results_v2/enrichment/go_bp_ora_normal_higher_paired_v2.tsv",
-    *[ROOT / f"figures_v2/final/F{i:02d}.png" for i in range(1, 8)],
+CANONICAL_FILES = sorted(
+    [
+        *list((ROOT / "results_v2/deseq2").glob("*")),
+        *list((ROOT / "results_v2/enrichment").glob("*")),
+        *list((ROOT / "results_v2/robustness").glob("*")),
+        *list((ROOT / "results_v2/metadata").glob("*")),
+        *list((ROOT / "figures_v2/final").glob("*")),
+        *list((ROOT / "figures_v2/vector").glob("*")),
+    ]
+)
+DOCUMENT_FILES = [
+    ROOT / "docs/ONCORNA_FINAL_SCIENTIFIC_REPORT.md",
+    ROOT / "docs/ONCORNA_MSC_PORTFOLIO_SUMMARY.md",
+    ROOT / "docs/ONCORNA_VIVA_SHEET.md",
+    ROOT / "docs/ONCORNA_FUTURE_STUDY_GUIDE.md",
 ]
 
 
@@ -29,7 +36,29 @@ def md5(path: Path) -> str:
     return digest.hexdigest()
 
 
+def available_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
 def main() -> int:
+    port = available_port()
+    health_url = f"http://127.0.0.1:{port}/_stcore/health"
+    app_source = (ROOT / "dashboard/app.py").read_text()
+    launcher_source = (ROOT / "run_dashboard.sh").read_text()
+    config_source = (ROOT / ".streamlit/config.toml").read_text()
+    if "use_container_width" in app_source:
+        raise RuntimeError("Deprecated use_container_width call remains in dashboard/app.py.")
+    if 'ONCORNA_PORT="${ONCORNA_PORT:-8502}"' not in launcher_source:
+        raise RuntimeError("run_dashboard.sh does not default to port 8502.")
+    for setting in ('toolbarMode = "minimal"', 'showErrorDetails = "none"', "gatherUsageStats = false"):
+        if setting not in config_source:
+            raise RuntimeError(f"Missing Streamlit config setting: {setting}")
+    for path in DOCUMENT_FILES:
+        if not path.is_file() or path.stat().st_size == 0:
+            raise RuntimeError(f"Missing dashboard document download: {path.name}")
+
     before = {path: md5(path) for path in CANONICAL_FILES}
     bare_run = subprocess.run(
         [sys.executable, "dashboard/app.py"],
@@ -51,7 +80,7 @@ def main() -> int:
             "run",
             "dashboard/app.py",
             "--server.headless=true",
-            f"--server.port={PORT}",
+            f"--server.port={port}",
             "--server.address=127.0.0.1",
         ],
         cwd=ROOT,
@@ -66,7 +95,7 @@ def main() -> int:
                 output = process.stdout.read() if process.stdout else ""
                 raise RuntimeError(f"Dashboard exited before health check:\n{output}")
             try:
-                with urllib.request.urlopen(HEALTH_URL, timeout=1) as response:
+                with urllib.request.urlopen(health_url, timeout=1) as response:
                     body = response.read().decode("utf-8").strip()
                 if response.status == 200 and body == "ok":
                     after = {path: md5(path) for path in CANONICAL_FILES}
